@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#7765a8">
+  <meta name="description" content="Persoonlijk overzicht voor vacatures en sollicitaties.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <title>Mijn sollicitaties</title>
+</head>
+<body>
+  <header class="topbar">
+    <div><span class="eyebrow">PERSOONLIJK OVERZICHT</span><h1>Mijn sollicitaties</h1></div>
+    <button id="themeButton" class="icon-button" aria-label="Thema wisselen" title="Thema wisselen">◐</button>
+  </header>
+
+  <main>
+    <section id="dashboard" class="page active">
+      <div class="welcome"><p class="eyebrow">JOUW OVERZICHT</p><h2>Alles op één plek.</h2><p>Houd vacatures, gesprekken en documenten bij.</p></div>
+      <div class="stats">
+        <article class="stat-card"><span>Vacatures</span><strong id="statTotal">0</strong></article>
+        <article class="stat-card"><span>Gesolliciteerd</span><strong id="statApplied">0</strong></article>
+        <article class="stat-card"><span>Gesprekken</span><strong id="statInterviews">0</strong></article>
+        <article class="stat-card"><span>Aanbod</span><strong id="statOffers">0</strong></article>
+      </div>
+      <div class="section-heading"><h2>Recente vacatures</h2><button class="text-button" data-page="vacancies">Alles bekijken</button></div>
+      <div id="recentVacancies" class="vacancy-list empty-state">Je hebt nog geen vacatures toegevoegd.</div>
+      <div class="quick-actions"><button class="primary-button" data-action="new-vacancy">＋ Vacature toevoegen</button></div>
+    </section>
+
+    <section id="vacancies" class="page">
+      <div class="section-heading"><div><p class="eyebrow">BEHEER</p><h2>Vacatures</h2></div><button class="primary-button compact" data-action="new-vacancy">＋ Toevoegen</button></div>
+      <input id="vacancySearch" class="search" type="search" placeholder="Zoek op functie of bedrijf…">
+      <select id="statusFilter" class="field"><option value="">Alle statussen</option></select>
+      <div id="vacancyList" class="vacancy-list empty-state">Nog geen vacatures.</div>
+    </section>
+
+    <section id="documents" class="page">
+      <div class="section-heading"><div><p class="eyebrow">BESTANDEN</p><h2>Documenten</h2></div></div>
+      <form id="documentForm" class="panel">
+        <label>Documenttype<select id="documentType" class="field" required></select></label>
+        <label>Bestand<input id="documentFile" class="field" type="file" required accept=".pdf,.doc,.docx,.odt,.rtf,.txt,.png,.jpg,.jpeg"></label>
+        <label>Notitie (optioneel)<input id="documentNote" class="field" type="text" placeholder="Bijv. CV met nadruk op planning"></label>
+        <button class="primary-button" type="submit">Document opslaan</button>
+      </form>
+      <div class="section-heading"><h2>Opgeslagen documenten</h2></div>
+      <div id="documentList" class="document-list empty-state">Nog geen documenten toegevoegd.</div>
+    </section>
+
+    <section id="settings" class="page">
+      <p class="eyebrow">VOORKEUREN</p><h2>Instellingen</h2>
+      <div class="panel">
+        <label>Kleurthema<select id="colorTheme" class="field"><option value="lavender">Lavendel</option><option value="pastel">Pastel</option><option value="beach">Beach</option><option value="colorful">Kleurrijk</option></select></label>
+        <label>Eigen accentkleur<input id="accentColor" class="field color-field" type="color" value="#7765a8"></label>
+        <button id="saveAppearance" class="secondary-button">Weergave opslaan</button>
+      </div>
+      <div class="panel">
+        <h3>Gegevensbeheer</h3><p class="muted">Je gegevens blijven lokaal op dit apparaat. Maak regelmatig een back-up.</p>
+        <button id="exportData" class="secondary-button">Back-up downloaden</button>
+        <label class="import-label">Back-up terugzetten<input id="importData" type="file" accept="application/json" hidden><span class="secondary-button">JSON-bestand kiezen</span></label>
+        <p id="backupMessage" class="muted" role="status"></p>
+      </div>
+      <p class="small-note">Technische basisversie · gegevens worden niet naar een server verstuurd.</p>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Hoofdnavigatie">
+    <button class="nav-item selected" data-page="dashboard"><span>⌂</span>Overzicht</button>
+    <button class="nav-item" data-page="vacancies"><span>▤</span>Vacatures</button>
+    <button class="nav-item" data-page="documents"><span>▧</span>Documenten</button>
+    <button class="nav-item" data-page="settings"><span>⚙</span>Instellingen</button>
+  </nav>
+
+  <dialog id="vacancyDialog">
+    <form id="vacancyForm" method="dialog" class="dialog-form">
+      <div class="dialog-heading"><div><p class="eyebrow">NIEUWE VACATURE</p><h2>Vacature toevoegen</h2></div><button type="button" class="icon-button" id="closeDialog">✕</button></div>
+      <label>Functietitel<input id="jobTitle" class="field" required placeholder="Bijv. Planner montage"></label>
+      <label>Bedrijf<input id="company" class="field" required placeholder="Bedrijfsnaam"></label>
+      <div class="two-col"><label>Locatie<input id="location" class="field" placeholder="Plaats"></label><label>Uren per week<input id="hours" class="field" type="number" min="1" max="60" placeholder="36"></label></div>
+      <div class="two-col"><label>Salaris (optioneel)<input id="salary" class="field" placeholder="Bijv. € 3.200"></label><label>Datum gevonden<input id="foundDate" class="field" type="date"></label></div>
+      <label>Vacaturelink<input id="jobUrl" class="field" type="url" placeholder="https://…"></label>
+      <label>Status<select id="jobStatus" class="field" required></select></label>
+      <label>Notities<textarea id="jobNotes" class="field" rows="3" placeholder="Wat spreekt je aan? Vragen voor later…"></textarea></label>
+      <div class="dialog-actions"><button type="button" class="secondary-button" id="cancelDialog">Annuleren</button><button type="submit" class="primary-button">Opslaan</button></div>
+    </form>
+  </dialog>
+  <script src="app.js"></script>
+</body>
+</html>
