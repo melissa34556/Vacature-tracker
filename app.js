@@ -68,6 +68,7 @@ function renderVacancyDetail(){const v=vacancies.find(x=>x.id===activeVacancyId)
 
 function installExtraUI(){installExtraUIOriginal();$("extraNav")?.remove();document.querySelectorAll('.bottom-nav [data-page="reminders"],.bottom-nav [data-page="documents"],.bottom-nav [data-page="settings"]').forEach(x=>x.remove());const settings=$("settings");if(settings){const links=settings.querySelector(".settings-links");if(links){links.innerHTML='<button data-page="documents">▧ Documenten beheren</button><button data-page="reminders">◷ Herinneringen beheren</button>';}}}
 document.addEventListener("click",async e=>{
+ const view=e.target.closest("[data-view]");if(view){currentView=view.dataset.view;document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b===view));render();return}
  const open=e.target.closest("[data-open-vacancy]");if(open){openVacancyDetail(open.dataset.openVacancy);return}
  const tab=e.target.closest("[data-detail-tab]");if(tab){detailTab=tab.dataset.detailTab;renderVacancyDetail();return}
  const save=e.target.closest("[data-save-notes]");if(save){const v=vacancies.find(x=>x.id===save.dataset.saveNotes);if(v){v.notes=$("detailNotes").value;v.updatedAt=new Date().toISOString();await put("vacancies",v);vacancies=await all("vacancies");renderVacancyDetail();}}
