@@ -28,7 +28,18 @@
     "params": {
       "title": "title",
       "text": "text",
-      "url": "url"
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": [
+            "image/*",
+            ".pdf",
+            ".docx",
+            ".txt"
+          ]
+        }
+      ]
     }
   }
 }
