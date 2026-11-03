@@ -47,7 +47,7 @@ function parseVacancyText(text){
  if(!company&&/werkenbijkwantum\.nl|kwantum/i.test(clean))company="Kwantum";
  let location=get("locatie|standplaats|plaats|location");
  if(!location){
-  const m=clean.match(/(?:hoofdkantoor|standplaats|locatie)\s+([A-ZÀ-Ý][\p{L}'-]+(?:\s+[A-ZÀ-Ý][\p{L}'-]+){0,2})/u);
+  const m=clean.match(/(?:hoofdkantoor|standplaats|locatie)\s+([A-ZÀ-Ý][\p{L}'-]+(?:\s+[A-ZÀ-Ý][\p{L}'-]+){0,2})/iu);
   if(m)location=m[1];
   else if(lines.length&&/^[A-ZÀ-Ý][\p{L}'-]+(?:,\s*[A-ZÀ-Ý][\p{L}'-]+)?$/.test(lines[0])&&lines[0].length<45)location=lines[0];
  }
