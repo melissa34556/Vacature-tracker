@@ -88,3 +88,58 @@ init().catch(err=>{document.body.innerHTML="<main><h1>App kon niet starten</h1><
 
 document.addEventListener("click",async e=>{const step=e.target.closest("[data-delete-step]");if(step){const v=vacancies.find(x=>x.id===activeVacancyId);if(!v)return;const ix=Number(step.dataset.deleteStep);const h=historyFor(v);if(ix<0||ix>=h.length)return;if(!confirm("Deze sollicitatiestap verwijderen?"))return;h.splice(ix,1);if(h.length)v.status=h[h.length-1].status;else{v.status="Vacature gevonden";h.push({status:v.status,date:v.foundDate||dateToday(),note:""})}await put("vacancies",v);vacancies=await all("vacancies");render();detailTab="steps";renderVacancyDetail();return}const unlink=e.target.closest("[data-unlink-doc]");if(unlink){const d=documents.find(x=>x.id===unlink.dataset.unlinkDoc);if(d){d.vacancyIds=(d.vacancyIds||[]).filter(id=>id!==activeVacancyId);await put("documents",d);documents=await all("documents");renderVacancyDetail()}}});
 document.addEventListener("submit",async e=>{if(e.target.id==="vacancyFileForm"){e.preventDefault();const v=vacancies.find(x=>x.id===activeVacancyId),f=$("vacancyFile").files[0];if(!v||!f)return;await put("documents",{id:uid(),name:f.name,type:$("vacancyFileType").value,note:$("vacancyFileNote").value.trim(),vacancyIds:[v.id],addedAt:new Date().toISOString(),blob:f});documents=await all("documents");renderDocs();renderVacancyDetail()}});
+
+
+// Vacature-import en originele vacaturetekst (lokale verwerking, geen AI)
+function vacancySummaryFromText(raw){
+ const text=String(raw||"").replace(/\\r/g,"").replace(/[ \\t]+/g," ").trim();
+ const lines=text.split("\\n").map(x=>x.trim()).filter(Boolean);
+ const pick=(patterns)=>{for(let i=0;i<lines.length;i++)if(patterns.some(p=>p.test(lines[i]))){const v=lines[i].replace(/^[^:]{2,45}:\\s*/,"");if(v.length>12)return v; if(lines[i+1]&&lines[i+1].length>8)return lines[i+1]}return ""};
+ const sections=[
+  ["Functie en organisatie",[/functie|over de functie|wie zijn wij|organisatie/i]],
+  ["Werkzaamheden",[/werkzaamheden|wat ga je doen|jouw rol|verantwoordelijkheden/i]],
+  ["Functie-eisen",[/functie-eisen|wat vragen wij|wie ben jij|dit breng je mee|vereisten/i]],
+  ["Arbeidsvoorwaarden",[/arbeidsvoorwaarden|wat bieden wij|wij bieden|salaris|aanbod/i]]
+ ];
+ const found=sections.map(([name,rx])=>{const i=lines.findIndex(x=>rx.some(r=>r.test(x)));if(i<0)return {name,text:"Niet duidelijk herkend in de tekst."};const chunk=[];for(let j=i+1;j<Math.min(lines.length,i+6);j++){if(/^(over ons|over het bedrijf|solliciteren|contact|privacy|cookie)/i.test(lines[j]))break;chunk.push(lines[j]);}return {name,text:chunk.join(" ").slice(0,700)||lines[i]};});
+ return {intro:lines.slice(0,3).join(" ").slice(0,450),sections:found};
+}
+function parseVacancyFields(raw){
+ const t=String(raw||"");
+ const title=(t.match(/(?:vacature|functie|gezocht)[:：\\s-]*([^\\n]{4,90})/i)||[])[1]||"";
+ const company=(t.match(/(?:bedrijf|organisatie|werken bij)[:：\\s-]*([^\\n]{2,70})/i)||[])[1]||"";
+ const loc=(t.match(/(?:locatie|standplaats|plaats)[:：\\s-]*([^\\n]{2,60})/i)||[])[1]||"";
+ const hours=(t.match(/(?:\\b[0-9]{1,2}\\s*[-–]\\s*[0-9]{1,2}\\s*uur|\\b[0-9]{1,2}\\s*uur(?:\\s*per\\s*week)?)/i)||[])[0]||"";
+ const salary=(t.match(/(?:€\\s?[0-9][0-9.\\s]*(?:,[0-9]{2})?(?:\\s*[-–]\\s*€?\\s?[0-9][0-9.\\s]*(?:,[0-9]{2})?)?)/)||[])[0]||"";
+ const url=(t.match(/https?:\\/\\/[^\\s)]+/i)||[])[0]||"";
+ return {title:title.trim(),company:company.trim(),location:loc.trim(),hours:(hours.match(/[0-9]+/)||[])[0]||"",salary,url};
+}
+function installVacancyImport(){
+ if($("vacancyImportDialog"))return;
+ document.body.insertAdjacentHTML("beforeend",`
+ <dialog id="vacancyImportDialog"><div class="dialog-form">
+ <div class="dialog-heading"><div><p class="eyebrow">NIEUWE VACATURE</p><h2>Hoe wil je toevoegen?</h2></div><button class="icon-button" data-close-import>✕</button></div>
+ <button class="primary-button" data-import-mode="manual">Handmatig invoeren</button>
+ <button class="secondary-button" data-import-mode="paste">Volledige tekst plakken</button>
+ <button class="secondary-button" data-import-mode="link">Vacaturelink gebruiken</button>
+ <p class="muted">Document- en foto-import volgen in een volgende uitbreiding.</p></div></dialog>
+ <dialog id="vacancyPasteDialog"><form id="vacancyPasteForm" class="dialog-form">
+ <div class="dialog-heading"><div><p class="eyebrow">VACATURE IMPORTEREN</p><h2>Plak vacaturetekst</h2></div><button type="button" class="icon-button" data-close-paste>✕</button></div>
+ <label>Volledige tekst of gekopieerde webpagina<textarea id="vacancyPasteText" class="field" rows="12" required placeholder="Plak hier de volledige vacaturetekst…"></textarea></label>
+ <p class="muted">De app herkent gegevens met vaste tekstregels. Controleer de resultaten; herkenning is niet altijd volledig.</p>
+ <button class="primary-button" type="submit">Gegevens herkennen</button></form></dialog>
+ <dialog id="vacancyTextDialog"><div class="dialog-form"><div class="dialog-heading"><h2>Volledige vacaturetekst</h2><button class="icon-button" data-close-fulltext>✕</button></div><div id="fullVacancyText" class="full-vacancy-text"></div></div></dialog>`);
+ document.addEventListener("click",e=>{
+  if(e.target.closest('[data-action="new-vacancy"]')){e.preventDefault();e.stopImmediatePropagation();$("vacancyImportDialog").showModal();return}
+  if(e.target.closest("[data-close-import]"))$("vacancyImportDialog").close();
+  if(e.target.closest("[data-close-paste]"))$("vacancyPasteDialog").close();
+  if(e.target.closest("[data-close-fulltext]"))$("vacancyTextDialog").close();
+  const mode=e.target.closest("[data-import-mode]");if(mode){$("vacancyImportDialog").close();if(mode.dataset.importMode==="manual")openVacancy();if(mode.dataset.importMode==="paste")$("vacancyPasteDialog").showModal();if(mode.dataset.importMode==="link"){const u=prompt("Plak de vacaturelink. Als de website niet uitleesbaar is, kun je de volledige pagina kopiëren via 'Volledige tekst plakken'.");if(u){openVacancy();$("jobUrl").value=u}}}
+  const full=e.target.closest("[data-show-fulltext]");if(full){const v=vacancies.find(x=>x.id===full.dataset.showFulltext);if(v){$("fullVacancyText").textContent=v.fullText||"Er is geen volledige vacaturetekst opgeslagen.";$("vacancyTextDialog").showModal()}}
+ },true);
+ $("vacancyPasteForm").addEventListener("submit",e=>{e.preventDefault();const raw=$("vacancyPasteText").value.trim();if(!raw)return;const p=parseVacancyFields(raw);$("vacancyPasteDialog").close();openVacancy();if(p.title)$("jobTitle").value=p.title;if(p.company)$("company").value=p.company;if(p.location)$("location").value=p.location;if(p.hours)$("hours").value=p.hours;if(p.url)$("jobUrl").value=p.url;if(p.salary)$("salaryMin").value=p.salary;window.pendingVacancySource={fullText:raw,summary:vacancySummaryFromText(raw)};});
+ const original=renderVacancyDetail;
+ renderVacancyDetail=function(){original();const v=vacancies.find(x=>x.id===activeVacancyId);if(!v)return;const head=$("vacancyDetailContent").querySelector(".detail-head");if(!head)return;const summary=v.summary|| (v.fullText?vacancySummaryFromText(v.fullText):null);if(summary){const el=document.createElement("section");el.className="panel vacancy-summary";el.innerHTML='<h3>Vacaturesamenvatting</h3><p>'+escapeHTML(summary.intro||"Automatisch geselecteerde tekstfragmenten uit de oorspronkelijke vacature.")+'</p>'+summary.sections.map(s=>'<h4>'+escapeHTML(s.name)+'</h4><p>'+escapeHTML(s.text)+'</p>').join("")+(v.fullText?'<button class="secondary-button" data-show-fulltext="'+v.id+'">Bekijk volledige vacature</button>':"");head.after(el)}else if(v.fullText){const b=document.createElement("button");b.className="secondary-button";b.dataset.showFulltext=v.id;b.textContent="Bekijk volledige vacature";head.after(b)}};
+}
+document.addEventListener("submit",async e=>{if(e.target.id==="vacancyForm"&&window.pendingVacancySource){const pending=window.pendingVacancySource;window.pendingVacancySource=null;setTimeout(async()=>{const latest=await all("vacancies");const v=latest.sort((x,y)=>(y.updatedAt||"").localeCompare(x.updatedAt||""))[0];if(v){v.fullText=pending.fullText;v.summary=pending.summary;await put("vacancies",v);vacancies=await all("vacancies");render();if(activeVacancyId===v.id)renderVacancyDetail()}},50)}});
+document.addEventListener("DOMContentLoaded",installVacancyImport);
