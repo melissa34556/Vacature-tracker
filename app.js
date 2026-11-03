@@ -32,7 +32,7 @@ function refreshRelations(){const opts='<option value="">Geen koppeling</option>
 
 function applySettings(s){document.body.classList.remove("theme-pastel","theme-beach","theme-colorful","theme-dark");if(s.theme&&s.theme!=="lavender")document.body.classList.add("theme-"+s.theme);if(s.dark)document.body.classList.add("theme-dark");if(s.accent)document.documentElement.style.setProperty("--accent",s.accent);$("colorTheme").value=s.theme||"lavender";$("accentColor").value=s.accent||"#7765a8";}
 document.addEventListener("click",async e=>{const page=e.target.closest("[data-page]");if(page)showPage(page.dataset.page);const ec=e.target.closest("[data-edit-contact]");if(ec){const c=contacts.find(x=>x.id===ec.dataset.editContact);if(c){$("contactId").value=c.id;for(const k of ["name","company","role","email","phone","notes"])$("contact"+k[0].toUpperCase()+k.slice(1)).value=c[k]||"";$("contactVacancy").value=c.vacancyId||"";}}const dc=e.target.closest("[data-delete-contact]");if(dc&&confirm("Contact verwijderen?")){await remove("contacts",dc.dataset.deleteContact);contacts=await all("contacts");renderContacts()}const dr=e.target.closest("[data-delete-reminder]");if(dr){await remove("reminders",dr.dataset.deleteReminder);reminders=await all("reminders");renderReminders()}if(e.target.closest('[data-action="new-vacancy"]'))openVacancy();const edit=e.target.closest("[data-edit]");if(edit){const v=vacancies.find(x=>x.id===edit.dataset.edit);if(v)openVacancy(v)}const del=e.target.closest("[data-delete]");if(del&&confirm("Deze vacature verwijderen?")){await remove("vacancies",del.dataset.delete);vacancies=await all("vacancies");render()}const op=e.target.closest("[data-open-doc]");if(op){const d=documents.find(x=>x.id===op.dataset.openDoc);if(d){const url=URL.createObjectURL(d.blob);const a=document.createElement("a");a.href=url;a.download=d.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}}const dd=e.target.closest("[data-delete-doc]");if(dd&&confirm("Dit document verwijderen?")){await remove("documents",dd.dataset.deleteDoc);documents=await all("documents");renderDocs()}});
-$("vacancyForm").addEventListener("submit",async e=>{e.preventDefault();const old=vacancies.find(v=>v.id===editingId);const v={id:editingId||uid(),title:$("jobTitle").value.trim(),company:$("company").value.trim(),location:$("location").value.trim(),hours:$("hours").value,salaryMin:$("salaryMin").value.trim(),salaryMax:$("salaryMax").value.trim(),foundDate:$("foundDate").value,url:$("jobUrl").value.trim(),status:$("jobStatus").value,notes:$("jobNotes").value.trim(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),...(window.pendingVacancySource?{fullText:window.pendingVacancySource.fullText,summary:window.pendingVacancySource.summary}:{fullText:old?.fullText,summary:old?.summary})};window.pendingVacancySource=null;v.statusHistory=Array.isArray(old?.statusHistory)?[...old.statusHistory]:[{status:old?.status||v.status,date:old?.foundDate||v.foundDate||dateToday(),note:""}];if(old&&old.status!==v.status)v.statusHistory.push({status:v.status,date:dateToday(),note:""});await put("vacancies",v);vacancies=await all("vacancies");refreshRelations();$("vacancyDialog").close();render()});
+$("vacancyForm").addEventListener("submit",async e=>{e.preventDefault();const old=vacancies.find(v=>v.id===editingId);const v={id:editingId||uid(),title:$("jobTitle").value.trim(),company:$("company").value.trim(),location:$("location").value.trim(),hours:$("hours").value,salaryMin:$("salaryMin").value.trim(),salaryMax:$("salaryMax").value.trim(),foundDate:$("foundDate").value,url:$("jobUrl").value.trim(),status:$("jobStatus").value,notes:$("jobNotes").value.trim(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};v.statusHistory=Array.isArray(old?.statusHistory)?[...old.statusHistory]:[{status:old?.status||v.status,date:old?.foundDate||v.foundDate||dateToday(),note:""}];if(old&&old.status!==v.status)v.statusHistory.push({status:v.status,date:dateToday(),note:""});await put("vacancies",v);vacancies=await all("vacancies");refreshRelations();$("vacancyDialog").close();render()});
 $("closeDialog").onclick=$("cancelDialog").onclick=()=>$("vacancyDialog").close();
 $("documentForm").addEventListener("submit",async e=>{e.preventDefault();const f=$("documentFile").files[0];if(!f)return;await put("documents",{id:uid(),name:f.name,type:$("documentType").value,note:$("documentNote").value.trim(),vacancyIds:Array.from($("documentVacancy")?.selectedOptions||[]).map(o=>o.value),addedAt:new Date().toISOString(),blob:f});documents=await all("documents");e.target.reset();renderDocs()});
 $("vacancySearch").addEventListener("input",render);$("statusFilter").addEventListener("change",render);
@@ -88,57 +88,3 @@ init().catch(err=>{document.body.innerHTML="<main><h1>App kon niet starten</h1><
 
 document.addEventListener("click",async e=>{const step=e.target.closest("[data-delete-step]");if(step){const v=vacancies.find(x=>x.id===activeVacancyId);if(!v)return;const ix=Number(step.dataset.deleteStep);const h=historyFor(v);if(ix<0||ix>=h.length)return;if(!confirm("Deze sollicitatiestap verwijderen?"))return;h.splice(ix,1);if(h.length)v.status=h[h.length-1].status;else{v.status="Vacature gevonden";h.push({status:v.status,date:v.foundDate||dateToday(),note:""})}await put("vacancies",v);vacancies=await all("vacancies");render();detailTab="steps";renderVacancyDetail();return}const unlink=e.target.closest("[data-unlink-doc]");if(unlink){const d=documents.find(x=>x.id===unlink.dataset.unlinkDoc);if(d){d.vacancyIds=(d.vacancyIds||[]).filter(id=>id!==activeVacancyId);await put("documents",d);documents=await all("documents");renderVacancyDetail()}}});
 document.addEventListener("submit",async e=>{if(e.target.id==="vacancyFileForm"){e.preventDefault();const v=vacancies.find(x=>x.id===activeVacancyId),f=$("vacancyFile").files[0];if(!v||!f)return;await put("documents",{id:uid(),name:f.name,type:$("vacancyFileType").value,note:$("vacancyFileNote").value.trim(),vacancyIds:[v.id],addedAt:new Date().toISOString(),blob:f});documents=await all("documents");renderDocs();renderVacancyDetail()}});
-
-
-// Vacature-import en originele vacaturetekst (lokale verwerking, geen AI)
-function vacancySummaryFromText(raw){
- const text=String(raw||"").replace(/\r/g,"").replace(/[ \t]+/g," ").trim();
- const lines=text.split("\n").map(x=>x.trim()).filter(Boolean);
- const pick=(patterns)=>{for(let i=0;i<lines.length;i++)if(patterns.some(p=>p.test(lines[i]))){const v=lines[i].replace(/^[^:]{2,45}:\s*/,"");if(v.length>12)return v; if(lines[i+1]&&lines[i+1].length>8)return lines[i+1]}return ""};
- const sections=[
-  ["Functie en organisatie",[/functie|over de functie|wie zijn wij|organisatie/i]],
-  ["Werkzaamheden",[/werkzaamheden|wat ga je doen|jouw rol|verantwoordelijkheden/i]],
-  ["Functie-eisen",[/functie-eisen|wat vragen wij|wie ben jij|dit breng je mee|vereisten/i]],
-  ["Arbeidsvoorwaarden",[/arbeidsvoorwaarden|wat bieden wij|wij bieden|salaris|aanbod/i]]
- ];
- const found=sections.map(([name,rx])=>{const i=lines.findIndex(x=>rx.some(r=>r.test(x)));if(i<0)return {name,text:"Niet duidelijk herkend in de tekst."};const chunk=[];for(let j=i+1;j<Math.min(lines.length,i+6);j++){if(/^(over ons|over het bedrijf|solliciteren|contact|privacy|cookie)/i.test(lines[j]))break;chunk.push(lines[j]);}return {name,text:chunk.join(" ").slice(0,700)||lines[i]};});
- return {intro:lines.slice(0,3).join(" ").slice(0,450),sections:found};
-}
-function parseVacancyFields(raw){
- const t=String(raw||"");
- const title=(t.match(/(?:vacature|functie|gezocht)[:：\s-]*([^\n]{4,90})/i)||[])[1]||"";
- const company=(t.match(/(?:bedrijf|organisatie|werken bij)[:：\s-]*([^\n]{2,70})/i)||[])[1]||"";
- const loc=(t.match(/(?:locatie|standplaats|plaats)[:：\s-]*([^\n]{2,60})/i)||[])[1]||"";
- const hours=(t.match(/(?:\b[0-9]{1,2}\s*[-–]\s*[0-9]{1,2}\s*uur|\b[0-9]{1,2}\s*uur(?:\s*per\s*week)?)/i)||[])[0]||"";
- const salary=(t.match(/(?:€\s?[0-9][0-9.\s]*(?:,[0-9]{2})?(?:\s*[-–]\s*€?\s?[0-9][0-9.\s]*(?:,[0-9]{2})?)?)/)||[])[0]||"";
- const url=(t.match(/https?:\/\/[^\s)]+/i)||[])[0]||"";
- return {title:title.trim(),company:company.trim(),location:loc.trim(),hours:(hours.match(/[0-9]+/)||[])[0]||"",salary,url};
-}
-function installVacancyImport(){
- if($("vacancyImportDialog"))return;
- document.body.insertAdjacentHTML("beforeend",`
- <dialog id="vacancyImportDialog"><div class="dialog-form">
- <div class="dialog-heading"><div><p class="eyebrow">NIEUWE VACATURE</p><h2>Hoe wil je toevoegen?</h2></div><button class="icon-button" data-close-import>✕</button></div>
- <button class="primary-button" data-import-mode="manual">Handmatig invoeren</button>
- <button class="secondary-button" data-import-mode="paste">Volledige tekst plakken</button>
- <button class="secondary-button" data-import-mode="link">Vacaturelink gebruiken</button>
- <p class="muted">Document- en foto-import volgen in een volgende uitbreiding.</p></div></dialog>
- <dialog id="vacancyPasteDialog"><form id="vacancyPasteForm" class="dialog-form">
- <div class="dialog-heading"><div><p class="eyebrow">VACATURE IMPORTEREN</p><h2>Plak vacaturetekst</h2></div><button type="button" class="icon-button" data-close-paste>✕</button></div>
- <label>Volledige tekst of gekopieerde webpagina<textarea id="vacancyPasteText" class="field" rows="12" required placeholder="Plak hier de volledige vacaturetekst…"></textarea></label>
- <p class="muted">De app herkent gegevens met vaste tekstregels. Controleer de resultaten; herkenning is niet altijd volledig.</p>
- <button class="primary-button" type="submit">Gegevens herkennen</button></form></dialog>
- <dialog id="vacancyTextDialog"><div class="dialog-form"><div class="dialog-heading"><h2>Volledige vacaturetekst</h2><button class="icon-button" data-close-fulltext>✕</button></div><div id="fullVacancyText" class="full-vacancy-text"></div></div></dialog>`);
- document.addEventListener("click",e=>{
-  if(e.target.closest('[data-action="new-vacancy"]')){e.preventDefault();e.stopImmediatePropagation();$("vacancyImportDialog").showModal();return}
-  if(e.target.closest("[data-close-import]"))$("vacancyImportDialog").close();
-  if(e.target.closest("[data-close-paste]"))$("vacancyPasteDialog").close();
-  if(e.target.closest("[data-close-fulltext]"))$("vacancyTextDialog").close();
-  const mode=e.target.closest("[data-import-mode]");if(mode){$("vacancyImportDialog").close();if(mode.dataset.importMode==="manual")openVacancy();if(mode.dataset.importMode==="paste")$("vacancyPasteDialog").showModal();if(mode.dataset.importMode==="link"){const u=prompt("Plak de vacaturelink. Als de website niet uitleesbaar is, kun je de volledige pagina kopiëren via 'Volledige tekst plakken'.");if(u){openVacancy();$("jobUrl").value=u}}}
-  const full=e.target.closest("[data-show-fulltext]");if(full){const v=vacancies.find(x=>x.id===full.dataset.showFulltext);if(v){$("fullVacancyText").textContent=v.fullText||"Er is geen volledige vacaturetekst opgeslagen.";$("vacancyTextDialog").showModal()}}
- },true);
- $("vacancyPasteForm").addEventListener("submit",e=>{e.preventDefault();const raw=$("vacancyPasteText").value.trim();if(!raw)return;const p=parseVacancyFields(raw);$("vacancyPasteDialog").close();openVacancy();if(p.title)$("jobTitle").value=p.title;if(p.company)$("company").value=p.company;if(p.location)$("location").value=p.location;if(p.hours)$("hours").value=p.hours;if(p.url)$("jobUrl").value=p.url;if(p.salary)$("salaryMin").value=p.salary;window.pendingVacancySource={fullText:raw,summary:vacancySummaryFromText(raw)};});
- const original=renderVacancyDetail;
- renderVacancyDetail=function(){original();const v=vacancies.find(x=>x.id===activeVacancyId);if(!v)return;const head=$("vacancyDetailContent").querySelector(".detail-head");if(!head)return;const summary=v.summary|| (v.fullText?vacancySummaryFromText(v.fullText):null);if(summary){const el=document.createElement("section");el.className="panel vacancy-summary";el.innerHTML='<h3>Vacaturesamenvatting</h3><p>'+escapeHTML(summary.intro||"Automatisch geselecteerde tekstfragmenten uit de oorspronkelijke vacature.")+'</p>'+summary.sections.map(s=>'<h4>'+escapeHTML(s.name)+'</h4><p>'+escapeHTML(s.text)+'</p>').join("")+(v.fullText?'<button class="secondary-button" data-show-fulltext="'+v.id+'">Bekijk volledige vacature</button>':"");head.after(el)}else if(v.fullText){const b=document.createElement("button");b.className="secondary-button";b.dataset.showFulltext=v.id;b.textContent="Bekijk volledige vacature";head.after(b)}};
-}
-document.addEventListener("DOMContentLoaded",installVacancyImport);
