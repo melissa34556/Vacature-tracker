@@ -40,7 +40,7 @@ function parseVacancyText(text){
  const url=urlMatch?urlMatch[0].replace(/[),.;!?]+$/,""):"";
  let title=get("functie(?:titel)?|job title|vacature(?:titel)?");
  if(!title){
-  const candidate=lines.slice(0,12).find(line=>line.length>5&&line.length<100&&!/^(hoofdkantoor|fulltime|parttime|ref(?:no|erentie)?\\b|vacature delen|solliciteren|over ons|wie zoeken we|wat krijg je)/i.test(line)&&!/^\\d+\\s*(uur|dagen)/i.test(line));
+  const candidate=lines.slice(0,12).find(line=>line.length>5&&line.length<100&&line.split(/\\s+/).length>=2&&!/^(hoofdkantoor|fulltime|parttime|ref(?:no|erentie)?\\b|vacature delen|solliciteren|over ons|wie zoeken we|wat krijg je)/i.test(line)&&!/^\\d+\\s*(uur|dagen)/i.test(line));
   if(candidate)title=candidate.replace(/^#\\s*/,"").replace(/\\s+[-|]\\s+.*$/,"").trim();
  }
  let company=get("bedrijf|organisatie|werkgever|company");
