@@ -36,7 +36,7 @@ function parseVacancyText(text){
  const title=get("functie(?:titel)?|job title|vacature(?:titel)?"),company=get("bedrijf|organisatie|werkgever|company");
  const location=get("locatie|standplaats|plaats|location"),hoursRaw=get("uren(?: per week)?|arbeidsduur|aantal uren|hours");
  const salary=get("salaris|salarisindicatie|bruto salaris|salary|beloning");
- const urlMatch=clean.match(/https?:\/\/[^\s<>"']+/i);
+ const urlMatch=clean.match(/https?:\/\/[^\s<>"']+/i);if(urlMatch)urlMatch[0]=urlMatch[0].replace(/[),.;!?]+$/,"");
  const hoursMatch=clean.match(/\b(\d{1,2})\s*(?:tot|-|–)\s*(\d{1,2})\s*uur(?:\s+per\s+week)?\b|\b(\d{1,2})\s*uur\s+per\s+week\b/i);
  const hoursRange=hoursRaw.match(/(\d{1,2})\s*(?:tot|-|–)\s*(\d{1,2})/i);
  const hours=hoursRange?hoursRange[1]+"–"+hoursRange[2]:hoursMatch?.[1]&&hoursMatch?.[2]?hoursMatch[1]+"–"+hoursMatch[2]:hoursMatch?.[3]||hoursRaw.match(/\d{1,2}/)?.[0]||"";
