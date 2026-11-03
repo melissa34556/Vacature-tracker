@@ -112,7 +112,24 @@ $("settingsShortcut").onclick=()=>showPage("settings")
 $("exportData").onclick=async()=>{const docs=await Promise.all(documents.map(async d=>({id:d.id,name:d.name,type:d.type,note:d.note,vacancyIds:d.vacancyIds||[],addedAt:d.addedAt,mime:d.blob.type,data:await blobToBase64(d.blob)})));const payload={format:"sollicitatie-app-backup",version:2,exportedAt:new Date().toISOString(),vacancies,documents:docs,contacts,reminders,settings:await all("settings")};download(new Blob([JSON.stringify(payload)],{type:"application/json"}),"sollicitaties-backup.json");$("backupMessage").textContent="Back-up aangemaakt."};
 function blobToBase64(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result.split(",")[1]);r.onerror=reject;r.readAsDataURL(blob)})}
 function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
-$("importData").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(data.format!=="sollicitatie-app-backup"||!Array.isArray(data.vacancies)||!Array.isArray(data.documents))throw Error("Ongeldig back-upbestand");if(!confirm("Back-up terugzetten? Bestaande vacatures en documenten met dezelfde ID worden bijgewerkt."))return;for(const v of data.vacancies)await put("vacancies",v);for(const d of data.documents){const raw=atob(d.data),arr=Uint8Array.from(raw,c=>c.charCodeAt(0));await put("documents",{...d,blob:new Blob([arr],{type:d.mime||"application/octet-stream"})})}for(const c of data.contacts||[])await put("contacts",c);for(const r of data.reminders||[])await put("reminders",r);for(const s of data.settings||[])await put("settings",s);vacancies=await all("vacancies");documents=await all("documents");contacts=await all("contacts");reminders=await all("reminders");const settings=(await all("settings"))[0];if(settings)applySettings(settings);render();$("backupMessage").textContent="Back-up teruggezet."}catch(err){$("backupMessage").textContent="Importeren mislukt: "+err.message}e.target.value=""};
+$("importData").onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
+ try{
+  const data=JSON.parse(await f.text());
+  if(data.format!=="sollicitatie-app-backup"||!Array.isArray(data.vacancies)||!Array.isArray(data.documents)||!Array.isArray(data.contacts||[])||!Array.isArray(data.reminders||[])||!Array.isArray(data.settings||[]))throw Error("Ongeldig back-upbestand");
+  if(data.vacancies.some(v=>!v||typeof v!=="object"||!v.id)||data.documents.some(d=>!d||typeof d!=="object"||!d.id||typeof d.data!=="string"))throw Error("De back-up bevat onvolledige gegevens.");
+  const restoredDocs=data.documents.map(d=>{const raw=atob(d.data),arr=Uint8Array.from(raw,c=>c.charCodeAt(0));return {...d,blob:new Blob([arr],{type:d.mime||"application/octet-stream"})}});
+  if(!confirm("Back-up terugzetten? Bestaande gegevens met dezelfde ID worden bijgewerkt. Andere bestaande gegevens blijven behouden."))return;
+  for(const v of data.vacancies)await put("vacancies",v);
+  for(const d of restoredDocs)await put("documents",d);
+  for(const c of data.contacts||[])await put("contacts",c);
+  for(const r of data.reminders||[])await put("reminders",r);
+  for(const item of data.settings||[])await put("settings",item);
+  vacancies=await all("vacancies");documents=await all("documents");contacts=await all("contacts");reminders=await all("reminders");
+  const settings=(await all("settings"))[0];if(settings)applySettings(settings);refreshRelations();render();$("backupMessage").textContent="Back-up teruggezet.";
+ }catch(err){$("backupMessage").textContent="Importeren mislukt: "+err.message}
+ e.target.value="";
+};
 
 /* v3 interface, board, detail history and full theme system */
 let currentView="list", activeVacancyId=null, detailTab="overview";
