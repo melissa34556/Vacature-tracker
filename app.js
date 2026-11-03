@@ -188,7 +188,7 @@ function mergeImportedTexts(items){
  }
  return result.trim();
 }
-async function importMultipleFiles(files,progressTarget){
+async async function importMultipleFiles(files,progressTarget){
  const results=[];
  for(let index=0;index<files.length;index++){
   const file=files[index];
