@@ -81,7 +81,10 @@ async function extractVacancyFile(file){
   pdfjs.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   const pdf=await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise,parts=[];
   for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){const page=await pdf.getPage(pageNo),content=await page.getTextContent();parts.push(content.items.map(x=>x.str||"").join(" "))}
-  return parts.join("\n\n");
+  const extracted=parts.join("\n\n").trim();if(extracted)return extracted;
+  const tesseract=await loadBrowserLibrary("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract"),scanned=[];
+  for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){const page=await pdf.getPage(pageNo),viewport=page.getViewport({scale:1.5}),canvas=document.createElement("canvas");canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:canvas.getContext("2d"),viewport}).promise;const result=await tesseract.recognize(canvas,"nld+eng",{logger:m=>{if(m.status==="recognizing text")$("fileImportMessage").textContent="Gescande PDF uitlezen… pagina "+pageNo+"/"+pdf.numPages+" ("+Math.round((m.progress||0)*100)+"%)"}});scanned.push(result.data.text||"")}
+  return scanned.join("\n\n");
  }
  if(ext==="docx"){
   const mammoth=await loadBrowserLibrary("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js","mammoth");
