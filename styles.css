@@ -41,3 +41,17 @@ body{background:var(--bg);color:var(--text)}
 .period-label{display:block;margin:15px 0 5px;font-size:13px;font-weight:700}.back-button{margin:8px 0}
 [hidden]{display:none!important}
 @media(min-width:700px){.kanban-column{flex-basis:275px;min-width:275px}.detail-head{padding:26px}.detail-panel{padding:22px}}
+
+/* Multi-colour theme accents across the interface */
+.dashboard-stats .stat-card:nth-child(1){background:var(--palette-1,var(--surface))}
+.dashboard-stats .stat-card:nth-child(2){background:var(--palette-2,var(--surface))}
+.dashboard-stats .stat-card:nth-child(3){background:var(--palette-3,var(--surface))}
+.dashboard-stats .stat-card:nth-child(4){background:var(--palette-4,var(--surface))}
+.stats-inline>div:nth-child(1) strong{color:var(--accent)}
+.stats-inline>div:nth-child(2) strong{color:#368b70}
+.stats-inline>div:nth-child(3) strong{color:#c17a35}
+.kanban-column:nth-child(4n+1){background:var(--palette-1,var(--column))}
+.kanban-column:nth-child(4n+2){background:var(--palette-2,var(--column))}
+.kanban-column:nth-child(4n+3){background:var(--palette-3,var(--column))}
+.kanban-column:nth-child(4n+4){background:var(--palette-4,var(--column))}
+.theme-dark .dashboard-stats .stat-card,.theme-dark .kanban-column{background:var(--surface)}
