@@ -12,29 +12,33 @@
 <body>
   <header class="topbar">
     <div><span class="eyebrow">PERSOONLIJK OVERZICHT</span><h1>Mijn sollicitaties</h1></div>
-    <button id="themeButton" class="icon-button" aria-label="Thema wisselen" title="Thema wisselen">◐</button>
+    <button id="settingsShortcut" class="icon-button" aria-label="Instellingen" title="Instellingen" data-page="settings">⚙</button>
   </header>
 
   <main>
     <section id="dashboard" class="page active">
       <div class="welcome"><p class="eyebrow">JOUW OVERZICHT</p><h2>Alles op één plek.</h2><p>Houd vacatures, gesprekken en documenten bij.</p></div>
-      <div class="stats">
-        <article class="stat-card"><span>Vacatures</span><strong id="statTotal">0</strong></article>
-        <article class="stat-card"><span>Gesolliciteerd</span><strong id="statApplied">0</strong></article>
+      <div class="stats dashboard-stats">
+        <article class="stat-card"><span>Alle vacatures</span><strong id="statTotal">0</strong></article>
+        <article class="stat-card"><span>Lopend</span><strong id="statApplied">0</strong></article>
         <article class="stat-card"><span>Gesprekken</span><strong id="statInterviews">0</strong></article>
         <article class="stat-card"><span>Aanbod</span><strong id="statOffers">0</strong></article>
       </div>
       <div class="section-heading"><h2>Recente vacatures</h2><button class="text-button" data-page="vacancies">Alles bekijken</button></div>
       <div id="recentVacancies" class="vacancy-list empty-state">Je hebt nog geen vacatures toegevoegd.</div>
-      <div class="quick-actions"><button class="primary-button" data-action="new-vacancy">＋ Vacature toevoegen</button></div>
+      <div class="section-heading"><h2>Statistieken</h2><button class="text-button" data-page="statistics">Alles bekijken</button></div><div id="dashboardStats" class="panel"></div><div class="quick-actions"><button class="primary-button" data-action="new-vacancy">＋ Nieuwe vacature toevoegen</button></div>
     </section>
 
     <section id="vacancies" class="page">
       <div class="section-heading"><div><p class="eyebrow">BEHEER</p><h2>Vacatures</h2></div><button class="primary-button compact" data-action="new-vacancy">＋ Toevoegen</button></div>
-      <input id="vacancySearch" class="search" type="search" placeholder="Zoek op functie of bedrijf…">
+      <div class="view-switch"><button class="view-choice active" data-view="list">☷ Lijst</button><button class="view-choice" data-view="board">▦ Bord</button></div><input id="vacancySearch" class="search" type="search" placeholder="Zoek op functie of bedrijf…">
       <select id="statusFilter" class="field"><option value="">Alle statussen</option></select>
-      <div id="vacancyList" class="vacancy-list empty-state">Nog geen vacatures.</div>
+      <div id="vacancyList" class="vacancy-list empty-state">Nog geen vacatures.</div><div id="vacancyBoard" class="kanban-board" hidden></div>
     </section>
+
+    <section id="statistics" class="page"><p class="eyebrow">INZICHT</p><h2>Statistieken</h2><label class="period-label">Periode<select id="statsPeriod" class="field"><option value="month">Deze maand</option><option value="quarter">Afgelopen 3 maanden</option><option value="year">Dit jaar</option><option value="all">Alles</option></select></label><div id="statisticsContent" class="panel"></div><div id="statusBreakdown" class="panel"></div></section>
+
+    <section id="vacancyDetail" class="page"><button class="text-button back-button" data-page="vacancies">← Terug naar vacatures</button><div id="vacancyDetailContent"></div></section>
 
     <section id="documents" class="page">
       <div class="section-heading"><div><p class="eyebrow">BESTANDEN</p><h2>Documenten</h2></div></div>
@@ -51,11 +55,9 @@
     <section id="settings" class="page">
       <p class="eyebrow">VOORKEUREN</p><h2>Instellingen</h2>
       <div class="panel">
-        <label>Kleurthema<select id="colorTheme" class="field"><option value="lavender">Lavendel</option><option value="pastel">Pastel</option><option value="beach">Beach</option><option value="colorful">Kleurrijk</option></select></label>
-        <label>Eigen accentkleur<input id="accentColor" class="field color-field" type="color" value="#7765a8"></label>
-        <button id="saveAppearance" class="secondary-button">Weergave opslaan</button>
+        <h3>Vormgeving</h3><label>Kies een kleurthema<select id="colorTheme" class="field"><option value="lavender">Lavendel</option><option value="pastel">Pastelmix</option><option value="beach">Beach</option><option value="colorful">Kleurrijk</option><option value="monochrome">Eén kleur (zelf kiezen)</option></select></label><label id="accentPickerLabel">Kies je hoofdkleur<input id="accentColor" class="field color-field" type="color" value="#7765a8"></label><div id="themePreview" class="theme-preview"><span></span><span></span><span></span><span></span><small>Voorbeeld van je thema</small></div><button id="saveAppearance" class="secondary-button">Thema toepassen</button>
       </div>
-      <div class="panel">
+      <div class="settings-links panel"><button data-page="documents">▧ Documenten beheren</button><button data-page="reminders">◷ Herinneringen beheren</button><button data-page="contacts">♙ Contacten beheren</button></div><div class="panel">
         <h3>Gegevensbeheer</h3><p class="muted">Je gegevens blijven lokaal op dit apparaat. Maak regelmatig een back-up.</p>
         <button id="exportData" class="secondary-button">Back-up downloaden</button>
         <label class="import-label">Back-up terugzetten<input id="importData" type="file" accept="application/json" hidden><span class="secondary-button">JSON-bestand kiezen</span></label>
@@ -65,12 +67,7 @@
     </section>
   </main>
 
-  <nav class="bottom-nav" aria-label="Hoofdnavigatie">
-    <button class="nav-item selected" data-page="dashboard"><span>⌂</span>Overzicht</button>
-    <button class="nav-item" data-page="vacancies"><span>▤</span>Vacatures</button>
-    <button class="nav-item" data-page="documents"><span>▧</span>Documenten</button>
-    <button class="nav-item" data-page="settings"><span>⚙</span>Instellingen</button>
-  </nav>
+  <nav class="bottom-nav" aria-label="Hoofdnavigatie"><button class="nav-item selected" data-page="dashboard"><span>⌂</span>Overzicht</button><button class="nav-item" data-page="vacancies"><span>▤</span>Vacatures</button><button class="nav-item" data-page="contacts"><span>♙</span>Contacten</button><button class="nav-item" data-page="statistics"><span>▥</span>Statistieken</button></nav>
 
   <dialog id="vacancyDialog">
     <form id="vacancyForm" method="dialog" class="dialog-form">
