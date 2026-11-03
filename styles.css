@@ -55,3 +55,43 @@ body{background:var(--bg);color:var(--text)}
 .kanban-column:nth-child(4n+3){background:var(--palette-3,var(--column))}
 .kanban-column:nth-child(4n+4){background:var(--palette-4,var(--column))}
 .theme-dark .dashboard-stats .stat-card,.theme-dark .kanban-column{background:var(--surface)}
+
+/* Professional compact visual refresh */
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--radius:14px;--shadow:0 1px 3px rgba(25,35,45,.045)}
+body{font-size:14px;letter-spacing:-.01em;background:var(--bg);color:var(--text);padding-bottom:calc(76px + env(safe-area-inset-bottom));transition:background-color .18s,color .18s}
+.topbar{padding:16px 18px 12px;max-width:920px}.topbar h1{font:700 21px/1.25 Inter,system-ui,sans-serif;letter-spacing:-.035em}.eyebrow{font-size:9px;letter-spacing:1.1px;color:var(--muted)}
+main{max-width:920px;padding:0 14px}.page.active{animation:pageIn .14s ease-out}@keyframes pageIn{from{opacity:.65}to{opacity:1}}
+.welcome{padding:17px 18px;border-radius:var(--radius);margin:3px 0 12px;background:var(--surface);border:1px solid var(--line)}
+.welcome h2{font:650 21px/1.25 Inter,system-ui,sans-serif;letter-spacing:-.035em;margin:5px 0}.welcome p:last-child{font-size:13px}
+.stats{gap:8px}.stat-card,.panel,.vacancy-card,.document-card{border-radius:var(--radius);padding:13px;box-shadow:none;border:1px solid var(--line)}
+.stat-card span{font-size:11px}.stat-card strong{font:700 23px/1.1 Inter,system-ui,sans-serif;margin-top:5px}
+.section-heading{margin:20px 2px 9px}.section-heading h2,h2{font:650 19px/1.25 Inter,system-ui,sans-serif;letter-spacing:-.025em}
+.text-button{font-size:12px}.primary-button,.secondary-button{border-radius:9px;padding:10px 13px;min-height:39px;font:650 13px Inter,system-ui,sans-serif}
+.icon-button{border-radius:10px;width:38px;height:38px;box-shadow:none;border:1px solid var(--line);background:var(--surface);color:var(--text)}
+.search,.field{border-radius:9px;padding:10px 11px;min-height:40px;font-size:13px}
+.search{margin:9px 0 7px}.vacancy-list,.document-list{gap:8px;margin-top:9px}
+.vacancy-card h3,.document-card h3{font:650 14px/1.35 Inter,system-ui,sans-serif;letter-spacing:-.015em}
+.vacancy-meta,.muted{font-size:12px;line-height:1.45}
+.status-pill{border-radius:7px;padding:4px 7px;font-size:10px;margin-top:7px}
+.card-actions{gap:6px;margin-top:9px}.card-actions button{border-radius:7px;padding:6px 9px;font-size:11px}
+.panel{gap:10px;margin:11px 0}.panel h3{font:650 14px Inter,system-ui,sans-serif}
+.bottom-nav{background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -2px 10px rgba(20,30,40,.035);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+.nav-item{font:550 10px Inter,system-ui,sans-serif;gap:2px;padding:4px;color:var(--muted)}.nav-item span{font-size:18px}.nav-item.selected{color:var(--accent)}
+.view-switch{background:var(--surface);border:1px solid var(--line);padding:3px;border-radius:10px;gap:3px}
+.view-choice{font-size:12px;padding:8px;border-radius:7px}.view-choice.active{background:var(--accent);color:white}
+.kanban-board{gap:9px}.kanban-column{flex-basis:226px;min-width:226px;border-radius:12px;padding:9px;min-height:180px}.kanban-column>header{font-size:12px;padding:4px 2px 9px}.kanban-card{border-radius:9px;padding:9px;box-shadow:none}.kanban-card>button strong{font:650 13px Inter,system-ui,sans-serif}.kanban-status{font-size:10px;padding:6px;border-radius:7px}
+.detail-head{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:15px;margin:9px 0}.detail-head h2{font-size:20px;margin:5px 0}
+.detail-tabs{margin:9px 0}.detail-tabs button{font-size:12px;padding:10px 11px;border-bottom-width:2px}
+.detail-panel{min-height:130px}.detail-grid{font-size:12px;gap:9px 8px}
+.timeline{margin:12px 0}.timeline li{padding:0 0 17px 20px}.timeline li strong{font-size:13px}.timeline li small{font-size:11px}
+.timeline-entry{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.step-delete{border:0;background:transparent;color:var(--muted);font-size:10px;padding:3px 4px;white-space:nowrap}
+.inline-form{gap:8px;padding-top:11px}.inline-form label{font-size:12px}
+.file-row{font-size:12px;padding:8px 0}.file-row button{font-size:11px;padding:6px 8px;border-radius:7px}
+.theme-preview{border-radius:10px;padding:9px}.theme-preview span{width:23px;height:23px;border-radius:6px}
+dialog{border-radius:16px}.dialog-form{padding:17px;gap:11px}.dialog-heading h2{font-size:19px}
+.empty-state{padding:14px;border-radius:12px}
+.theme-dark .bottom-nav{background:var(--surface);border-color:var(--line);box-shadow:0 -2px 10px #0003}
+.theme-dark .icon-button,.theme-dark .kanban-card,.theme-dark .stat-card{background:var(--surface);color:var(--text)}
+@media(min-width:700px){body{padding-bottom:24px}.topbar{padding:22px 18px 14px}.bottom-nav{max-width:920px;width:calc(100% - 28px);margin:20px auto 0;border:1px solid var(--line);border-radius:12px}.stats{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:390px){.topbar{padding:13px 14px 10px}.welcome{padding:14px}.welcome h2{font-size:19px}.stat-card{padding:11px}.stat-card strong{font-size:21px}.kanban-column{flex-basis:205px;min-width:205px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
