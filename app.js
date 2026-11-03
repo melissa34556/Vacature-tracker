@@ -81,7 +81,7 @@ function refreshRelations(){const opts='<option value="">Geen koppeling</option>
 
 function applySettings(s){document.body.classList.remove("theme-pastel","theme-beach","theme-colorful","theme-dark");if(s.theme&&s.theme!=="lavender")document.body.classList.add("theme-"+s.theme);if(s.dark)document.body.classList.add("theme-dark");if(s.accent)document.documentElement.style.setProperty("--accent",s.accent);$("colorTheme").value=s.theme||"lavender";$("accentColor").value=s.accent||"#7765a8";}
 document.addEventListener("click",async e=>{const page=e.target.closest("[data-page]");if(page)showPage(page.dataset.page);const ec=e.target.closest("[data-edit-contact]");if(ec){const c=contacts.find(x=>x.id===ec.dataset.editContact);if(c){$("contactId").value=c.id;for(const k of ["name","company","role","email","phone","notes"])$("contact"+k[0].toUpperCase()+k.slice(1)).value=c[k]||"";$("contactVacancy").value=c.vacancyId||"";}}const dc=e.target.closest("[data-delete-contact]");if(dc&&confirm("Contact verwijderen?")){await remove("contacts",dc.dataset.deleteContact);contacts=await all("contacts");renderContacts()}const dr=e.target.closest("[data-delete-reminder]");if(dr){await remove("reminders",dr.dataset.deleteReminder);reminders=await all("reminders");renderReminders()}if(e.target.closest('[data-action="new-vacancy"]'))openVacancy();const edit=e.target.closest("[data-edit]");if(edit){const v=vacancies.find(x=>x.id===edit.dataset.edit);if(v)openVacancy(v)}const del=e.target.closest("[data-delete]");if(del&&confirm("Deze vacature verwijderen? Gekoppelde documenten blijven bewaard; de koppeling met deze vacature wordt verwijderd.")){const id=del.dataset.delete;await remove("vacancies",id);for(const d of documents){if((d.vacancyIds||[]).includes(id)){d.vacancyIds=d.vacancyIds.filter(x=>x!==id);await put("documents",d)}}for(const c of contacts){if(c.vacancyId===id){c.vacancyId="";await put("contacts",c)}}for(const r of reminders){if(r.vacancyId===id){r.vacancyId="";await put("reminders",r)}}vacancies=await all("vacancies");documents=await all("documents");contacts=await all("contacts");reminders=await all("reminders");if(activeVacancyId===id){activeVacancyId=null;showPage("vacancies")}refreshRelations();render()}const op=e.target.closest("[data-open-doc]");if(op){const d=documents.find(x=>x.id===op.dataset.openDoc);if(d){const url=URL.createObjectURL(d.blob);const a=document.createElement("a");a.href=url;a.download=d.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}}const dd=e.target.closest("[data-delete-doc]");if(dd&&confirm("Dit document verwijderen?")){await remove("documents",dd.dataset.deleteDoc);documents=await all("documents");renderDocs()}});
-$("vacancyForm").addEventListener("submit",async e=>{e.preventDefault();const old=vacancies.find(v=>v.id===editingId);const v={id:editingId||uid(),fullText:$("fullVacancyTextInput").value||"",title:$("jobTitle").value.trim(),company:$("company").value.trim(),location:$("location").value.trim(),hours:$("hours").value,salaryMin:$("salaryMin").value.trim(),salaryMax:$("salaryMax").value.trim(),foundDate:$("foundDate").value,url:$("jobUrl").value.trim(),status:$("jobStatus").value,notes:$("jobNotes").value.trim(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};v.statusHistory=Array.isArray(old?.statusHistory)?[...old.statusHistory]:[{status:old?.status||v.status,date:old?.foundDate||v.foundDate||dateToday(),note:""}];if(old&&old.status!==v.status)v.statusHistory.push({status:v.status,date:dateToday(),note:""});await put("vacancies",v);pendingVacancyText="";vacancies=await all("vacancies");refreshRelations();$("vacancyDialog").close();render()});
+$("vacancyForm").addEventListener("submit",async e=>{e.preventDefault();const old=vacancies.find(v=>v.id===editingId);const v={id:editingId||uid(),fullText:$("fullVacancyTextInput").value||"",title:$("jobTitle").value.trim(),company:$("company").value.trim(),location:$("location").value.trim(),hours:$("hours").value,salaryMin:$("salaryMin").value.trim(),salaryMax:$("salaryMax").value.trim(),foundDate:$("foundDate").value,url:$("jobUrl").value.trim(),status:$("jobStatus").value,notes:$("jobNotes").value.trim(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(!old){const norm=s=>String(s||"").trim().toLowerCase().replace(/\s+/g," ");const duplicate=vacancies.find(x=>(v.url&&x.url&&norm(v.url)===norm(x.url))||(v.title&&v.company&&norm(v.title)===norm(x.title)&&norm(v.company)===norm(x.company)));if(duplicate&&confirm("Deze vacature lijkt al in je overzicht te staan ("+duplicate.title+" – "+duplicate.company+"). Wil je de bestaande vacature openen in plaats van een dubbele toe te voegen?")){$("vacancyDialog").close();openVacancyDetail(duplicate.id);return;}}v.statusHistory=Array.isArray(old?.statusHistory)?[...old.statusHistory]:[{status:old?.status||v.status,date:old?.foundDate||v.foundDate||dateToday(),note:""}];if(old&&old.status!==v.status)v.statusHistory.push({status:v.status,date:dateToday(),note:""});await put("vacancies",v);pendingVacancyText="";vacancies=await all("vacancies");refreshRelations();$("vacancyDialog").close();render()});
 $("closeDialog").onclick=$("cancelDialog").onclick=()=>{$("vacancyDialog").close();pendingVacancyText=""};
 $("chooseManualVacancy").addEventListener("click",()=>{$("addMethodDialog").close();editingId=null;pendingVacancyText="";$("vacancyForm").reset();$("fullVacancyTextInput").value="";$("foundDate").value=dateToday();$("jobStatus").value=STATUSES[0];$("vacancyDialog").showModal()});
 $("choosePasteVacancy").addEventListener("click",startPasteImport);
@@ -151,7 +151,57 @@ $("parsePasteVacancy").addEventListener("click",()=>{const text=$("pasteVacancyT
 $("chooseFileVacancy")?.addEventListener("click",()=>{$("addMethodDialog").close();$("vacancyImportFile").value="";$("fileImportMessage").textContent="";$("fileVacancyDialog").showModal()});
 $("cancelFileVacancy")?.addEventListener("click",()=> $("fileVacancyDialog").close());
 $("cancelFileVacancyBottom")?.addEventListener("click",()=> $("fileVacancyDialog").close());
-$("importFileVacancy")?.addEventListener("click",async()=>{const file=$("vacancyImportFile").files[0];if(!file){$("fileImportMessage").textContent="Kies eerst een bestand.";return;}const button=$("importFileVacancy");button.disabled=true;button.textContent="Bestand uitlezen…";try{const text=await extractVacancyFile(file);if(!text.trim())throw new Error("Er is geen leesbare tekst gevonden. Controleer of het bestand tekst bevat of probeer een scherpere scan/foto.");$("fileVacancyDialog").close();openVacancyFromText(text)}catch(err){$("fileImportMessage").textContent=err.message}finally{button.disabled=false;button.textContent="Gegevens herkennen"}});
+$("importFileVacancy")?.addEventListener("click",async()=>{const files=Array.from($("vacancyImportFile").files||[]);if(!files.length){$("fileImportMessage").textContent="Kies eerst een of meer bestanden.";return;}const button=$("importFileVacancy");button.disabled=true;button.textContent="Bestanden uitlezen…";try{const text=await importMultipleFiles(files,$("fileImportMessage"));$("fileVacancyDialog").close();openVacancyFromText(text)}catch(err){$("fileImportMessage").textContent=err.message}finally{button.disabled=false;button.textContent="Gegevens herkennen"}});
+
+function normalizeOverlapLine(line){return String(line||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim()}
+function overlapCount(left,right){
+ const a=left.split("\n").map(normalizeOverlapLine).filter(x=>x.length>=18),b=right.split("\n").map(normalizeOverlapLine).filter(x=>x.length>=18);
+ let best=0;for(let n=1;n<=Math.min(a.length,b.length);n++){let ok=true;for(let j=0;j<n;j++)if(a[a.length-n+j]!==b[j]){ok=false;break;}if(ok)best=n;}return best;
+}
+function mergeImportedTexts(items){
+ const usable=items.map(x=>({name:x.name,text:String(x.text||"").replace(/\r/g,"").trim(),isImage:x.isImage})).filter(x=>x.text);
+ if(!usable.length)return "";
+ const photos=usable.filter(x=>x.isImage),others=usable.filter(x=>!x.isImage);
+ let orderedPhotos=photos;
+ if(photos.length>1){
+  const scores=photos.map((p,i)=>photos.map((q,j)=>i===j?0:overlapCount(p.text,q.text)));
+  const incoming=scores.map((row,j)=>scores.reduce((sum,col)=>sum+col[j],0));
+  const outgoing=scores.map(row=>row.reduce((sum,v)=>sum+v,0));
+  let current=outgoing.map((v,i)=>({i,score:v-incoming[i]})).sort((a,b)=>b.score-a.score)[0].i;
+  const sequence=[current],remaining=new Set(photos.map((_,i)=>i));remaining.delete(current);
+  while(remaining.size){let best=-1,bestScore=0;for(const j of remaining){const score=scores[current][j];if(score>bestScore){best=j;bestScore=score;}}
+   if(best<0||bestScore===0)break;sequence.push(best);remaining.delete(best);current=best;
+  }
+  // Only reorder when every selected image is connected by a meaningful text overlap.
+  if(remaining.size===0&&sequence.length===photos.length)orderedPhotos=sequence.map(i=>photos[i]);
+ }
+ const sequence=[...others,...orderedPhotos];
+ let result="";
+ for(const item of sequence){
+  const next=item.text.split("\n"),existing=result.split("\n");
+  let overlap=0;
+  for(let n=1;n<=Math.min(existing.length,next.length);n++){
+   const tail=existing.slice(-n).map(normalizeOverlapLine),head=next.slice(0,n).map(normalizeOverlapLine);
+   if(tail.every((v,i)=>v&&v===head[i]))overlap=n;
+  }
+  result+=(result?"\n\n":"")+next.slice(overlap).join("\n").trim();
+ }
+ return result.trim();
+}
+async function importMultipleFiles(files,progressTarget){
+ const results=[];
+ for(let index=0;index<files.length;index++){
+  const file=files[index];
+  if(file.size>25*1024*1024)throw new Error(file.name+" is groter dan 25 MB.");
+  if(progressTarget)progressTarget.textContent="Bestand "+(index+1)+" van "+files.length+" uitlezen: "+file.name;
+  const text=await extractVacancyFile(file);
+  results.push({name:file.name,text,isImage:/\.(jpe?g|png|webp)$/i.test(file.name)});
+ }
+ const merged=mergeImportedTexts(results);
+ if(!merged)throw new Error("Er is geen leesbare tekst gevonden. Probeer scherpere foto's of een tekst-PDF.");
+ return merged;
+}
+
 
 $("documentForm").addEventListener("submit",async e=>{e.preventDefault();const f=$("documentFile").files[0];if(!f)return;await put("documents",{id:uid(),name:f.name,type:$("documentType").value,note:$("documentNote").value.trim(),vacancyIds:Array.from($("documentVacancy")?.selectedOptions||[]).map(o=>o.value),addedAt:new Date().toISOString(),blob:f});documents=await all("documents");e.target.reset();renderDocs()});
 $("vacancySearch").addEventListener("input",render);$("statusFilter").addEventListener("change",render);
@@ -244,7 +294,7 @@ $("colorTheme")?.addEventListener("change",()=>{$("accentPickerLabel").hidden=$(
 $("accentColor")?.addEventListener("input",updateThemePreview);
 $("saveAppearance")?.addEventListener("click",async()=>{const s={id:"appearance",theme:$("colorTheme").value,accent:$("accentColor").value};await put("settings",s);applySettings(s)});
 $("themeButton")?.remove();
-init().then(()=>{const q=new URLSearchParams(location.search);if(q.get("shared")==="1"){const sharedText=q.get("text")||q.get("title")||"",sharedUrl=q.get("url")||"";const text=sharedText+(sharedUrl&&!sharedText.includes(sharedUrl)?"\n"+sharedUrl:"");if(text.trim()){openVacancyFromText(text);if(sharedUrl&&!$("jobUrl").value)$("jobUrl").value=sharedUrl;if(!$("jobTitle").value&&q.get("title"))$("jobTitle").value=q.get("title");}history.replaceState({},"",location.pathname)}}).catch(err=>{document.body.innerHTML="<main><h1>App kon niet starten</h1><p>"+escapeHTML(err.message)+"</p></main>"});
+init().then(async()=>{const q=new URLSearchParams(location.search);if(q.get("shared")==="1"){const sharedText=q.get("text")||q.get("title")||"",sharedUrl=q.get("url")||"";let text=sharedText+(sharedUrl&&!sharedText.includes(sharedUrl)?"\n"+sharedUrl:"");const fileIds=(q.get("sharedFiles")||"").split(",").filter(Boolean);if(fileIds.length){try{const cache=await caches.open("vacature-share-inbox-v1"),files=[];for(const id of fileIds){const key=new Request(new URL("./__shared_files/"+encodeURIComponent(id),location.href).toString()),response=await cache.match(key);if(response){const blob=await response.blob();files.push(new File([blob],response.headers.get("x-file-name")||"gedeeld-bestand",{type:blob.type}));await cache.delete(key);}}if(files.length){const imported=await importMultipleFiles(files,null);text+=(text?"\n\n":"")+imported;}}catch(error){console.warn("Gedeelde bestanden konden niet automatisch worden uitgelezen:",error);}}if(text.trim()){openVacancyFromText(text);if(sharedUrl&&!$("jobUrl").value)$("jobUrl").value=sharedUrl;if(!$("jobTitle").value&&q.get("title"))$("jobTitle").value=q.get("title");}else if(fileIds.length){$("fileImportMessage").textContent="De gedeelde bestanden zijn ontvangen, maar konden niet automatisch worden uitgelezen. Voeg ze toe via Document of foto uploaden."; $("addMethodDialog").showModal();}history.replaceState({},"",location.pathname)}}).catch(err=>{document.body.innerHTML="<main><h1>App kon niet starten</h1><p>"+escapeHTML(err.message)+"</p></main>"});
 
 document.addEventListener("click",async e=>{const step=e.target.closest("[data-delete-step]");if(step){const v=vacancies.find(x=>x.id===activeVacancyId);if(!v)return;const ix=Number(step.dataset.deleteStep);const h=historyFor(v);if(ix<0||ix>=h.length)return;if(!confirm("Deze sollicitatiestap verwijderen?"))return;h.splice(ix,1);if(h.length)v.status=h[h.length-1].status;else{v.status="Vacature gevonden";h.push({status:v.status,date:v.foundDate||dateToday(),note:""})}await put("vacancies",v);vacancies=await all("vacancies");render();detailTab="steps";renderVacancyDetail();return}const unlink=e.target.closest("[data-unlink-doc]");if(unlink){const d=documents.find(x=>x.id===unlink.dataset.unlinkDoc);if(d){d.vacancyIds=(d.vacancyIds||[]).filter(id=>id!==activeVacancyId);await put("documents",d);documents=await all("documents");renderVacancyDetail()}}});
 document.addEventListener("submit",async e=>{if(e.target.id==="vacancyFileForm"){e.preventDefault();const v=vacancies.find(x=>x.id===activeVacancyId),f=$("vacancyFile").files[0];if(!v||!f)return;await put("documents",{id:uid(),name:f.name,type:$("vacancyFileType").value,note:$("vacancyFileNote").value.trim(),vacancyIds:[v.id],addedAt:new Date().toISOString(),blob:f});documents=await all("documents");renderDocs();renderVacancyDetail()}});
