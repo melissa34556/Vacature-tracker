@@ -32,38 +32,38 @@ function labelledValue(text,labels){
  return "";
 }
 function parseVacancyText(text){
- const clean=String(text||"").replaceAll("\\r","").replace(/[\\u00a0\\t]+/g," ").trim();
- const lines=clean.split("\\n").map(x=>x.replace(/^\\s*[•*–-]\\s*/,"").trim()).filter(Boolean);
+ const clean=String(text||"").replaceAll("\r","").replace(/[\u00a0\t]+/g," ").trim();
+ const lines=clean.split("\n").map(x=>x.replace(/^\s*[•*–-]\s*/,"").trim()).filter(Boolean);
  const get=labels=>labelledValue(clean,labels);
  const firstMatch=(re,source=clean)=>source.match(re);
- const urlMatch=firstMatch(/https?:\\/\\/[^\\s<>"']+/i);
+ const urlMatch=firstMatch(/https?:\/\/[^\s<>"']+/i);
  const url=urlMatch?urlMatch[0].replace(/[),.;!?]+$/,""):"";
  let title=get("functie(?:titel)?|job title|vacature(?:titel)?");
  if(!title){
-  const candidate=lines.slice(0,12).find(line=>line.length>5&&line.length<100&&line.split(/\\s+/).length>=2&&!/^(hoofdkantoor|fulltime|parttime|ref(?:no|erentie)?\\b|vacature delen|solliciteren|over ons|wie zoeken we|wat krijg je)/i.test(line)&&!/^\\d+\\s*(uur|dagen)/i.test(line));
-  if(candidate)title=candidate.replace(/^#\\s*/,"").replace(/\\s+[-|]\\s+.*$/,"").trim();
+  const candidate=lines.slice(0,12).find(line=>line.length>5&&line.length<100&&line.split(/\s+/).length>=2&&!/^(hoofdkantoor|fulltime|parttime|ref(?:no|erentie)?\b|vacature delen|solliciteren|over ons|wie zoeken we|wat krijg je)/i.test(line)&&!/^\d+\s*(uur|dagen)/i.test(line));
+  if(candidate)title=candidate.replace(/^#\s*/,"").replace(/\s+[-|]\s+.*$/,"").trim();
  }
  let company=get("bedrijf|organisatie|werkgever|company");
- if(!company&&/werkenbijkwantum\\.nl|kwantum/i.test(clean))company="Kwantum";
+ if(!company&&/werkenbijkwantum\.nl|kwantum/i.test(clean))company="Kwantum";
  let location=get("locatie|standplaats|plaats|location");
  if(!location){
-  const m=clean.match(/(?:hoofdkantoor|standplaats|locatie)\\s+([A-ZÀ-Ý][\\p{L}'-]+(?:\\s+[A-ZÀ-Ý][\\p{L}'-]+){0,2})/u);
+  const m=clean.match(/(?:hoofdkantoor|standplaats|locatie)\s+([A-ZÀ-Ý][\p{L}'-]+(?:\s+[A-ZÀ-Ý][\p{L}'-]+){0,2})/u);
   if(m)location=m[1];
-  else if(lines.length&&/^[A-ZÀ-Ý][\\p{L}'-]+(?:,\\s*[A-ZÀ-Ý][\\p{L}'-]+)?$/.test(lines[0])&&lines[0].length<45)location=lines[0];
+  else if(lines.length&&/^[A-ZÀ-Ý][\p{L}'-]+(?:,\s*[A-ZÀ-Ý][\p{L}'-]+)?$/.test(lines[0])&&lines[0].length<45)location=lines[0];
  }
  const hoursRaw=get("uren(?: per week)?|arbeidsduur|aantal uren|hours");
  let hours="";
- const hr=hoursRaw.match(/(\\d{1,2})\\s*(?:tot|-|–)\\s*(\\d{1,2})/i);
- const hm=clean.match(/\\b(\\d{1,2})\\s*(?:tot|-|–)\\s*(\\d{1,2})\\s*uur(?:\\s+per\\s+week)?\\b|\\b(\\d{1,2})\\s*uur\\s*(?:per\\s+week)?\\b/i);
+ const hr=hoursRaw.match(/(\d{1,2})\s*(?:tot|-|–)\s*(\d{1,2})/i);
+ const hm=clean.match(/\b(\d{1,2})\s*(?:tot|-|–)\s*(\d{1,2})\s*uur(?:\s+per\s+week)?\b|\b(\d{1,2})\s*uur\s*(?:per\s+week)?\b/i);
  if(hr)hours=hr[1]+"–"+hr[2];else if(hm)hours=hm[1]&&hm[2]?hm[1]+"–"+hm[2]:hm[3]||hm[1]||"";
  if(!hours&&/fulltime/i.test(clean))hours="Fulltime";
  if(!hours&&/parttime/i.test(clean))hours="Parttime";
  let salaryMin="",salaryMax="";
- const salaryLine=clean.split("\\n").find(line=>/salaris|beloning|verdien|maandsalaris|jaarsalaris/i.test(line))||"";
+ const salaryLine=clean.split("\n").find(line=>/salaris|beloning|verdien|maandsalaris|jaarsalaris/i.test(line))||"";
  const salaryScope=salaryLine||get("salaris|salarisindicatie|bruto salaris|salary|beloning");
- const salaryNums=[...salaryScope.matchAll(/(?:€\\s*)?(\\d{1,3}(?:\\.\\d{3})+|\\d{4,5})(?:,\\d{2})?/g)].map(m=>m[1].startsWith("€")?m[1]:m[1]).filter(v=>Number(v.replace(/\\./g,""))>=1000);
+ const salaryNums=[...salaryScope.matchAll(/(?:€\s*)?(\d{1,3}(?:\.\d{3})+|\d{4,5})(?:,\d{2})?/g)].map(m=>m[1].startsWith("€")?m[1]:m[1]).filter(v=>Number(v.replace(/\./g,""))>=1000);
  if(salaryNums.length){salaryMin="€ "+salaryNums[0];if(salaryNums.length>1)salaryMax="€ "+salaryNums[1];}
- const ref=clean.match(/(?:ref(?:erentie)?\\s*(?:no|nr|nummer)?\\s*[:#]?\\s*)([A-Z0-9-]+)/i);
+ const ref=clean.match(/(?:ref(?:erentie)?\s*(?:no|nr|nummer)?\s*[:#]?\s*)([A-Z0-9-]+)/i);
  return {title,company,location,hours,salaryMin,salaryMax,url,fullText:text,reference:ref?.[1]||""};
 }
 function startPasteImport(){$("addMethodDialog").close();$("pasteVacancyText").value="";$("pasteParseMessage").textContent="";$("pasteVacancyDialog").showModal();}
@@ -96,14 +96,14 @@ async function fetchVacancyFromUrl(raw){
  const pageTitle=doc.querySelector('meta[property="og:title"]')?.content||doc.querySelector("h1")?.textContent||doc.title||"";
  const description=doc.querySelector('meta[property="og:description"]')?.content||doc.querySelector('meta[name="description"]')?.content||"";
  const body=(doc.querySelector("main")||doc.querySelector("article")||doc.body)?.innerText||"";
- const text=[pageTitle,description,body].filter(Boolean).join("\\n\\n").replace(/\\n{3,}/g,"\\n\\n");
+ const text=[pageTitle,description,body].filter(Boolean).join("\n\n").replace(/\n{3,}/g,"\n\n");
  if(text.trim().length<80)throw new Error("De pagina bevat te weinig leesbare vacaturetekst.");
  return {text,url:parsed.href};
 }
 $("fetchLinkVacancy")?.addEventListener("click",async()=>{
  const raw=$("vacancyUrlInput").value.trim();if(!raw){$("linkImportMessage").textContent="Vul eerst een vacaturelink in.";return;}
  const button=$("fetchLinkVacancy");button.disabled=true;button.textContent="Pagina ophalen…";$("linkImportMessage").textContent="";
- try{const result=await fetchVacancyFromUrl(raw);$("linkVacancyDialog").close();openVacancyFromText(result.text);$("jobUrl").value=result.url; if(!$("company").value){const host=new URL(result.url).hostname.replace(/^www\\./,"").split(".")[0];if(host==="werkenbijkwantum")$("company").value="Kwantum";}}
+ try{const result=await fetchVacancyFromUrl(raw);$("linkVacancyDialog").close();openVacancyFromText(result.text);$("jobUrl").value=result.url; if(!$("company").value){const host=new URL(result.url).hostname.replace(/^www\./,"").split(".")[0];if(host==="werkenbijkwantum")$("company").value="Kwantum";}}
  catch(err){$("linkImportMessage").textContent=err.message.includes("Failed to fetch")||err instanceof TypeError?"Deze website blokkeert automatisch uitlezen vanuit de app (CORS). Plak de vacaturetekst of upload de PDF; de link kun je daarna ook bewaren.":err.message}
  finally{button.disabled=false;button.textContent="Vacature ophalen";}
 });
