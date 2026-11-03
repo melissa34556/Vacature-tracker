@@ -63,7 +63,37 @@ $("chooseManualVacancy").addEventListener("click",()=>{$("addMethodDialog").clos
 $("choosePasteVacancy").addEventListener("click",startPasteImport);
 $("cancelPasteVacancy").addEventListener("click",()=> $("pasteVacancyDialog").close());
 $("cancelPasteVacancyBottom").addEventListener("click",()=> $("pasteVacancyDialog").close());
+function openVacancyFromText(text){
+ const p=parseVacancyText(text);editingId=null;pendingVacancyText=p.fullText;$("vacancyForm").reset();
+ $("jobTitle").value=p.title;$("company").value=p.company;$("location").value=p.location;$("hours").value=p.hours;
+ $("salaryMin").value=p.salaryMin;$("salaryMax").value="";$("foundDate").value=dateToday();$("jobUrl").value=p.url;
+ $("jobStatus").value=STATUSES[0];$("jobNotes").value="";$("fullVacancyTextInput").value=p.fullText;$("vacancyDialog").showModal();
+}
+function loadBrowserLibrary(src,globalName){
+ if(window[globalName])return Promise.resolve(window[globalName]);
+ return new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=src;script.onload=()=>window[globalName]?resolve(window[globalName]):reject(new Error("Bibliotheek kon niet worden geladen."));script.onerror=()=>reject(new Error("Geen verbinding om de bestandslezer te laden."));document.head.appendChild(script)});
+}
+async function extractVacancyFile(file){
+ const ext=file.name.split(".").pop().toLowerCase();
+ if(ext==="txt")return await file.text();
+ if(ext==="pdf"){
+  const pdfjs=await loadBrowserLibrary("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js","pdfjsLib");
+  pdfjs.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const pdf=await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise,parts=[];
+  for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){const page=await pdf.getPage(pageNo),content=await page.getTextContent();parts.push(content.items.map(x=>x.str||"").join(" "))}
+  return parts.join("\\n\\n");
+ }
+ if(ext==="docx"){
+  const mammoth=await loadBrowserLibrary("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js","mammoth");
+  const result=await mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});return result.value||"";
+ }
+ throw new Error("Dit bestandstype wordt nog niet ondersteund. Gebruik voorlopig PDF, DOCX of TXT.");
+}
 $("parsePasteVacancy").addEventListener("click",()=>{const text=$("pasteVacancyText").value;if(!text.trim()){$("pasteParseMessage").textContent="Plak eerst de vacaturetekst.";return;}const p=parseVacancyText(text);$("pasteVacancyDialog").close();editingId=null;pendingVacancyText=p.fullText;$("vacancyForm").reset();$("jobTitle").value=p.title;$("company").value=p.company;$("location").value=p.location;$("hours").value=p.hours;$("salaryMin").value=p.salaryMin;$("salaryMax").value="";$("foundDate").value=dateToday();$("jobUrl").value=p.url;$("jobStatus").value=STATUSES[0];$("jobNotes").value="";$("fullVacancyTextInput").value=p.fullText;$("vacancyDialog").showModal()});
+$("chooseFileVacancy")?.addEventListener("click",()=>{$("addMethodDialog").close();$("vacancyFileImport").value="";$("fileImportMessage").textContent="";$("fileVacancyDialog").showModal()});
+$("cancelFileVacancy")?.addEventListener("click",()=> $("fileVacancyDialog").close());
+$("importFileVacancy")?.addEventListener("click",async()=>{const file=$("vacancyImportFile").files[0];if(!file){$("fileImportMessage").textContent="Kies eerst een bestand.";return;}const button=$("importFileVacancy");button.disabled=true;button.textContent="Bestand uitlezen…";try{const text=await extractVacancyFile(file);if(!text.trim())throw new Error("Er is geen leesbare tekst gevonden. Een scan of foto vraagt om tekstherkenning (OCR), die volgt later.");$("fileVacancyDialog").close();openVacancyFromText(text)}catch(err){$("fileImportMessage").textContent=err.message}finally{button.disabled=false;button.textContent="Gegevens herkennen"}});
+
 $("documentForm").addEventListener("submit",async e=>{e.preventDefault();const f=$("documentFile").files[0];if(!f)return;await put("documents",{id:uid(),name:f.name,type:$("documentType").value,note:$("documentNote").value.trim(),vacancyIds:Array.from($("documentVacancy")?.selectedOptions||[]).map(o=>o.value),addedAt:new Date().toISOString(),blob:f});documents=await all("documents");e.target.reset();renderDocs()});
 $("vacancySearch").addEventListener("input",render);$("statusFilter").addEventListener("change",render);
 $("settingsShortcut").onclick=()=>showPage("settings")
