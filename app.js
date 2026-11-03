@@ -120,4 +120,4 @@ document.addEventListener("click",async e=>{const step=e.target.closest("[data-d
 document.addEventListener("submit",async e=>{if(e.target.id==="vacancyFileForm"){e.preventDefault();const v=vacancies.find(x=>x.id===activeVacancyId),f=$("vacancyFile").files[0];if(!v||!f)return;await put("documents",{id:uid(),name:f.name,type:$("vacancyFileType").value,note:$("vacancyFileNote").value.trim(),vacancyIds:[v.id],addedAt:new Date().toISOString(),blob:f});documents=await all("documents");renderDocs();renderVacancyDetail()}});
 
 document.addEventListener("click",e=>{const b=e.target.closest("[data-show-full-text]");if(!b)return;const v=vacancies.find(x=>x.id===b.dataset.showFullText);if(!v)return;$("fullVacancyTextContent").textContent=v.fullText||"";$("fullVacancyTextDialog").showModal()});
-$("closeFullVacancyText")?.addEventListener("click",()=>$("fullVacancyTextDialog").close());
+["closeFullVacancyText","closeFullVacancyTextBottom"].forEach(id=>$(id)?.addEventListener("click",()=>$("fullVacancyTextDialog").close()));
