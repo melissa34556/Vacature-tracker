@@ -1,5 +1,5 @@
-const CACHE = "sollicitatie-app-v30";
-const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest"];
+const CACHE = "sollicitatie-app-v31";
+const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(
