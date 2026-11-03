@@ -27,17 +27,17 @@ function openVacancy(v=null){
  pendingVacancyText=v.fullText||"";$("vacancyDialog").showModal();
 }
 function labelledValue(text,labels){
- const re=new RegExp("^\\s*(?:[-•*]\\s*)?("+labels+")\\s*[:：-]\\s*(.+?)\\s*$","i");
- for(const line of text.split(/\\r?\\n/)){const m=line.match(re);if(m)return m[2].trim();}
+ const re=new RegExp("^\\\\s*(?:[-•*]\\\\s*)?("+labels+")\\\\s*[:：-]\\\\s*(.+?)\\\\s*$","i");
+ for(const line of text.split("\\n")){const m=line.match(re);if(m)return m[2].trim();}
  return "";
 }
 function parseVacancyText(text){
- const clean=text.replace(/\\r/g,"").trim(),get=labels=>labelledValue(clean,labels);
+ const clean=text.replaceAll("\\r","").trim(),get=labels=>labelledValue(clean,labels);
  const title=get("functie(?:titel)?|job title|vacature(?:titel)?"),company=get("bedrijf|organisatie|werkgever|company");
  const location=get("locatie|standplaats|plaats|location"),hoursRaw=get("uren(?: per week)?|arbeidsduur|aantal uren|hours");
  const salary=get("salaris|salarisindicatie|bruto salaris|salary|beloning");
  const urlMatch=clean.match(/https?:\\/\\/[^\\s<>"']+/i);
- const hoursMatch=clean.match(/\\b(\\d{1,2})\\s*(?:tot|-|–)\\s*(\\d{1,2})\\s*uur(?:\\s+per\\s+week)?\\b|\\b(\\d{1,2})\\s*uur\\s+per\\s+week\\b/i);
+ const hoursMatch=clean.match(new RegExp("\\\\b(\\\\d{1,2})\\\\s*(?:tot|-|–)\\\\s*(\\\\d{1,2})\\\\s*uur(?:\\\\s+per\\\\s+week)?\\\\b|\\\\b(\\\\d{1,2})\\\\s*uur\\\\s+per\\\\s+week\\\\b","i"));
  const hours=hoursRaw.match(/\\d{1,2}/)?.[0]||hoursMatch?.[1]||hoursMatch?.[3]||"";
  const salaryMatch=salary.match(/€\\s?[\\d.]+(?:,\\d{2})?/);
  return {title,company,location,hours,salaryMin:salaryMatch?.[0]||"",url:urlMatch?.[0]||"",fullText:clean};
