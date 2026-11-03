@@ -36,7 +36,6 @@ $("vacancyForm").addEventListener("submit",async e=>{e.preventDefault();const ol
 $("closeDialog").onclick=$("cancelDialog").onclick=()=>$("vacancyDialog").close();
 $("documentForm").addEventListener("submit",async e=>{e.preventDefault();const f=$("documentFile").files[0];if(!f)return;await put("documents",{id:uid(),name:f.name,type:$("documentType").value,note:$("documentNote").value.trim(),vacancyIds:Array.from($("documentVacancy")?.selectedOptions||[]).map(o=>o.value),addedAt:new Date().toISOString(),blob:f});documents=await all("documents");e.target.reset();renderDocs()});
 $("vacancySearch").addEventListener("input",render);$("statusFilter").addEventListener("change",render);
-$("saveAppearance").onclick=async()=>{const s={id:"appearance",theme:$("colorTheme").value,accent:$("accentColor").value};await put("settings",s);applySettings(s)};
 $("settingsShortcut").onclick=()=>showPage("settings")
 $("exportData").onclick=async()=>{const docs=await Promise.all(documents.map(async d=>({id:d.id,name:d.name,type:d.type,note:d.note,vacancyIds:d.vacancyIds||[],addedAt:d.addedAt,mime:d.blob.type,data:await blobToBase64(d.blob)})));const payload={format:"sollicitatie-app-backup",version:2,exportedAt:new Date().toISOString(),vacancies,documents:docs,contacts,reminders,settings:await all("settings")};download(new Blob([JSON.stringify(payload)],{type:"application/json"}),"sollicitaties-backup.json");$("backupMessage").textContent="Back-up aangemaakt."};
 function blobToBase64(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result.split(",")[1]);r.onerror=reject;r.readAsDataURL(blob)})}
@@ -75,9 +74,9 @@ document.addEventListener("click",async e=>{
 });
 document.addEventListener("change",async e=>{const status=e.target.closest("[data-change-status]");if(status){const v=vacancies.find(x=>x.id===status.dataset.changeStatus);if(v&&v.status!==status.value){historyFor(v).push({status:status.value,date:dateToday(),note:""});v.status=status.value;await put("vacancies",v);vacancies=await all("vacancies");render();if($("vacancyDetail").classList.contains("active"))renderVacancyDetail();}}});
 document.addEventListener("submit",async e=>{if(e.target.id==="stepForm"){e.preventDefault();const v=vacancies.find(x=>x.id===activeVacancyId);if(!v)return;const status=$("stepStatus").value;historyFor(v).push({status,date:$("stepDate").value||dateToday(),note:$("stepNote").value.trim()});v.status=status;v.updatedAt=new Date().toISOString();await put("vacancies",v);vacancies=await all("vacancies");render();detailTab="steps";renderVacancyDetail();}});
-$("statsPeriod").addEventListener("change",renderStatistics);
-$("colorTheme").addEventListener("change",()=>{$("accentPickerLabel").hidden=$("colorTheme").value!=="monochrome";updateThemePreview()});
-$("accentColor").addEventListener("input",updateThemePreview);
-$("saveAppearance").addEventListener("click",async()=>{const s={id:"appearance",theme:$("colorTheme").value,accent:$("accentColor").value};await put("settings",s);applySettings(s)});
+$("statsPeriod")?.addEventListener("change",renderStatistics);
+$("colorTheme")?.addEventListener("change",()=>{$("accentPickerLabel").hidden=$("colorTheme").value!=="monochrome";updateThemePreview()});
+$("accentColor")?.addEventListener("input",updateThemePreview);
+$("saveAppearance")?.addEventListener("click",async()=>{const s={id:"appearance",theme:$("colorTheme").value,accent:$("accentColor").value};await put("settings",s);applySettings(s)});
 $("themeButton")?.remove();
 init().catch(err=>{document.body.innerHTML="<main><h1>App kon niet starten</h1><p>"+escapeHTML(err.message)+"</p></main>"});
