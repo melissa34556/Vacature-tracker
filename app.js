@@ -87,7 +87,12 @@ async function extractVacancyFile(file){
   const mammoth=await loadBrowserLibrary("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js","mammoth");
   const result=await mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});return result.value||"";
  }
- throw new Error("Dit bestandstype wordt nog niet ondersteund. Gebruik voorlopig PDF, DOCX of TXT.");
+ if(["jpg","jpeg","png","webp"].includes(ext)){
+  const tesseract=await loadBrowserLibrary("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");
+  const result=await tesseract.recognize(file,"nld+eng",{logger:m=>{if(m.status==="recognizing text")$("fileImportMessage").textContent="Foto uitlezen… "+Math.round((m.progress||0)*100)+"%"}});
+  return result.data.text||"";
+ }
+ throw new Error("Dit bestandstype wordt nog niet ondersteund. Gebruik PDF, DOCX, TXT of een JPG-, PNG- of WEBP-afbeelding.");
 }
 $("parsePasteVacancy").addEventListener("click",()=>{const text=$("pasteVacancyText").value;if(!text.trim()){$("pasteParseMessage").textContent="Plak eerst de vacaturetekst.";return;}const p=parseVacancyText(text);$("pasteVacancyDialog").close();editingId=null;pendingVacancyText=p.fullText;$("vacancyForm").reset();$("jobTitle").value=p.title;$("company").value=p.company;$("location").value=p.location;$("hours").value=p.hours;$("salaryMin").value=p.salaryMin;$("salaryMax").value="";$("foundDate").value=dateToday();$("jobUrl").value=p.url;$("jobStatus").value=STATUSES[0];$("jobNotes").value="";$("fullVacancyTextInput").value=p.fullText;$("vacancyDialog").showModal()});
 $("chooseFileVacancy")?.addEventListener("click",()=>{$("addMethodDialog").close();$("vacancyImportFile").value="";$("fileImportMessage").textContent="";$("fileVacancyDialog").showModal()});
