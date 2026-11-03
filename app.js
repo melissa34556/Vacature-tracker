@@ -27,19 +27,19 @@ function openVacancy(v=null){
  pendingVacancyText=v.fullText||"";$("vacancyDialog").showModal();
 }
 function labelledValue(text,labels){
- const re=new RegExp("^\\\\s*(?:[-•*]\\\\s*)?("+labels+")\\\\s*[:：-]\\\\s*(.+?)\\\\s*$","i");
- for(const line of text.split("\\n")){const m=line.match(re);if(m)return m[2].trim();}
+ const re=new RegExp("^\\s*(?:[-•*]\\s*)?("+labels+")\\s*[:：-]\\s*(.+?)\\s*$","i");
+ for(const line of text.split("\n")){const m=line.match(re);if(m)return m[2].trim();}
  return "";
 }
 function parseVacancyText(text){
- const clean=text.replaceAll("\\r","").trim(),get=labels=>labelledValue(clean,labels);
+ const clean=text.replaceAll("\r","").trim(),get=labels=>labelledValue(clean,labels);
  const title=get("functie(?:titel)?|job title|vacature(?:titel)?"),company=get("bedrijf|organisatie|werkgever|company");
  const location=get("locatie|standplaats|plaats|location"),hoursRaw=get("uren(?: per week)?|arbeidsduur|aantal uren|hours");
  const salary=get("salaris|salarisindicatie|bruto salaris|salary|beloning");
- const urlMatch=clean.match(/https?:\\/\\/[^\\s<>"']+/i);
- const hoursMatch=clean.match(new RegExp("\\\\b(\\\\d{1,2})\\\\s*(?:tot|-|–)\\\\s*(\\\\d{1,2})\\\\s*uur(?:\\\\s+per\\\\s+week)?\\\\b|\\\\b(\\\\d{1,2})\\\\s*uur\\\\s+per\\\\s+week\\\\b","i"));
- const hours=hoursRaw.match(/\\d{1,2}/)?.[0]||hoursMatch?.[1]||hoursMatch?.[3]||"";
- const salaryMatch=salary.match(/€\\s?[\\d.]+(?:,\\d{2})?/);
+ const urlMatch=clean.match(/https?:\/\/[^\s<>"']+/i);
+ const hoursMatch=clean.match(/\b(\d{1,2})\s*(?:tot|-|–)\s*(\d{1,2})\s*uur(?:\s+per\s+week)?\b|\b(\d{1,2})\s*uur\s+per\s+week\b/i);
+ const hours=hoursRaw.match(/\d{1,2}/)?.[0]||hoursMatch?.[1]||hoursMatch?.[3]||"";
+ const salaryMatch=salary.match(/€\s?[\d.]+(?:,\d{2})?/);
  return {title,company,location,hours,salaryMin:salaryMatch?.[0]||"",url:urlMatch?.[0]||"",fullText:clean};
 }
 function startPasteImport(){$("addMethodDialog").close();$("pasteVacancyText").value="";$("pasteParseMessage").textContent="";$("pasteVacancyDialog").showModal();}
@@ -62,6 +62,7 @@ $("closeDialog").onclick=$("cancelDialog").onclick=()=>{$("vacancyDialog").close
 $("chooseManualVacancy").addEventListener("click",()=>{$("addMethodDialog").close();editingId=null;pendingVacancyText="";$("vacancyForm").reset();$("foundDate").value=dateToday();$("jobStatus").value=STATUSES[0];$("vacancyDialog").showModal()});
 $("choosePasteVacancy").addEventListener("click",startPasteImport);
 $("cancelPasteVacancy").addEventListener("click",()=> $("pasteVacancyDialog").close());
+$("cancelPasteVacancyBottom").addEventListener("click",()=> $("pasteVacancyDialog").close());
 $("parsePasteVacancy").addEventListener("click",()=>{const text=$("pasteVacancyText").value.trim();if(!text){$("pasteParseMessage").textContent="Plak eerst de vacaturetekst.";return;}const p=parseVacancyText(text);$("pasteVacancyDialog").close();editingId=null;pendingVacancyText=p.fullText;$("vacancyForm").reset();$("jobTitle").value=p.title;$("company").value=p.company;$("location").value=p.location;$("hours").value=p.hours;$("salaryMin").value=p.salaryMin;$("salaryMax").value="";$("foundDate").value=dateToday();$("jobUrl").value=p.url;$("jobStatus").value=STATUSES[0];$("jobNotes").value="";$("vacancyDialog").showModal()});
 $("documentForm").addEventListener("submit",async e=>{e.preventDefault();const f=$("documentFile").files[0];if(!f)return;await put("documents",{id:uid(),name:f.name,type:$("documentType").value,note:$("documentNote").value.trim(),vacancyIds:Array.from($("documentVacancy")?.selectedOptions||[]).map(o=>o.value),addedAt:new Date().toISOString(),blob:f});documents=await all("documents");e.target.reset();renderDocs()});
 $("vacancySearch").addEventListener("input",render);$("statusFilter").addEventListener("change",render);
