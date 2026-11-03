@@ -101,3 +101,6 @@ dialog{border-radius:16px}.dialog-form{padding:17px;gap:11px}.dialog-heading h2{
 .topbar{background:transparent!important;color:var(--text)}
 .bottom-nav{background:var(--surface)!important;border-top:1px solid var(--line)!important;box-shadow:0 -1px 5px rgba(20,30,40,.025)!important}
 .bottom-nav .nav-item{background:transparent!important}
+
+#pasteVacancyText{min-height:220px;resize:vertical;line-height:1.5}
+#pasteParseMessage{margin:0;min-height:16px}
