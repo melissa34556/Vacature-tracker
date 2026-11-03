@@ -98,9 +98,9 @@ function periodStart(p){const d=new Date();if(p==="month")d.setDate(1);else if(p
 function renderStatistics(){const p=$("statsPeriod")?.value||"month",cut=periodStart(p),items=vacancies.filter(v=>(v.foundDate||v.createdAt?.slice(0,10)||"")>=cut),responses=items.filter(v=>v.status!=="Vacature gevonden"),rate=items.length?Math.round(responses.length/items.length*100):0;$("statisticsContent").innerHTML=`<div class="stats-inline"><div><strong>${items.length}</strong><span>Sollicitaties</span></div><div><strong>${responses.length}</strong><span>Reacties</span></div><div><strong>${rate}%</strong><span>Reactiepercentage</span></div></div><p class="muted">Periode: ${p==="month"?"deze maand":p==="quarter"?"afgelopen 3 maanden":p==="year"?"dit jaar":"alle gegevens"}</p>`;$("statusBreakdown").innerHTML="<h3>Verdeling per status</h3>"+STATUSES.map(s=>{const n=items.filter(v=>v.status===s).length;return `<div class="bar-row"><span>${escapeHTML(s)}</span><div><i style="width:${items.length?n/items.length*100:0}%"></i></div><b>${n}</b></div>`}).join("")}
 function openVacancyDetail(id){activeVacancyId=id;detailTab="overview";renderVacancyDetail();showPage("vacancyDetail")}
 const VACANCY_SECTION_RULES=[
- {label:"Werkzaamheden",pattern:/^(?:wat ga je doen|werkzaamheden|functieomschrijving|jouw rol|de functie|over de functie)$/i},
- {label:"Wie zoeken ze?",pattern:/^(?:wie ben jij|jouw profiel|wie zoeken wij|wat breng je mee|functie-eisen|eisen|jij hebt)$/i},
- {label:"Wat bieden ze?",pattern:/^(?:wat bieden wij|wat bieden we|ons aanbod|arbeidsvoorwaarden|dit krijg je|wij bieden)$/i}
+ {label:"Werkzaamheden",pattern:/^(?:wat ga je doen\??|dit ga je doen|werkzaamheden|jouw werkzaamheden|functieomschrijving|jouw rol|de functie|over de functie)$/i},
+ {label:"Wie zoeken ze?",pattern:/^(?:wie ben jij\??|jouw profiel|wie zoeken wij\??|wat breng je mee\??|wat verwachten we van jou|functie-eisen|eisen|jij hebt)$/i},
+ {label:"Wat bieden ze?",pattern:/^(?:wat bieden wij\??|wat bieden we\??|ons aanbod|arbeidsvoorwaarden|dit krijg je|wij bieden)$/i}
 ];
 function extractVacancySections(text){
  const lines=String(text||"").replace(/\r/g,"").split("\n"),found=[];
