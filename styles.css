@@ -95,3 +95,9 @@ dialog{border-radius:16px}.dialog-form{padding:17px;gap:11px}.dialog-heading h2{
 @media(min-width:700px){body{padding-bottom:24px}.topbar{padding:22px 18px 14px}.bottom-nav{max-width:920px;width:calc(100% - 28px);margin:20px auto 0;border:1px solid var(--line);border-radius:12px}.stats{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:390px){.topbar{padding:13px 14px 10px}.welcome{padding:14px}.welcome h2{font-size:19px}.stat-card{padding:11px}.stat-card strong{font-size:21px}.kanban-column{flex-basis:205px;min-width:205px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+
+/* Neutral app chrome: keep the header and navigation calm across themes */
+.topbar{background:transparent!important;color:var(--text)}
+.bottom-nav{background:var(--surface)!important;border-top:1px solid var(--line)!important;box-shadow:0 -1px 5px rgba(20,30,40,.025)!important}
+.bottom-nav .nav-item{background:transparent!important}
