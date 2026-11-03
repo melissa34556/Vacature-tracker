@@ -38,9 +38,9 @@ function parseVacancyText(text){
  const salary=get("salaris|salarisindicatie|bruto salaris|salary|beloning");
  const urlMatch=clean.match(/https?:\/\/[^\s<>"']+/i);
  const hoursMatch=clean.match(/\b(\d{1,2})\s*(?:tot|-|–)\s*(\d{1,2})\s*uur(?:\s+per\s+week)?\b|\b(\d{1,2})\s*uur\s+per\s+week\b/i);
- const hours=hoursRaw.match(/\d{1,2}/)?.[0]||hoursMatch?.[1]||hoursMatch?.[3]||"";
- const salaryMatch=salary.match(/€\s?[\d.]+(?:,\d{2})?/);
- return {title,company,location,hours,salaryMin:salaryMatch?.[0]||"",url:urlMatch?.[0]||"",fullText:text};
+ const hours=hoursRaw.match(/\d{1,2}\s*(?:tot|-|–)\s*\d{1,2}/i)?.[0]?.replace(/\s*(?:tot|-|–)\s*/i,"–")||hoursMatch?.[1]&&hoursMatch?.[2]?hoursMatch[1]+"–"+hoursMatch[2]:hoursMatch?.[3]||hoursRaw.match(/\d{1,2}/)?.[0]||"";
+ const salaryMatches=[...salary.matchAll(/€\s?[\d.]+(?:,\d{2})?/g)];
+ return {title,company,location,hours,salaryMin:salaryMatches[0]?.[0]||"",salaryMax:salaryMatches[1]?.[0]||"",url:urlMatch?.[0]||"",fullText:text};
 }
 function startPasteImport(){$("addMethodDialog").close();$("pasteVacancyText").value="";$("pasteParseMessage").textContent="";$("pasteVacancyDialog").showModal();}
 async function init(){db=await openDB();vacancies=await all("vacancies");documents=await all("documents");contacts=await all("contacts");reminders=await all("reminders");fillSelect("jobStatus",STATUSES);fillSelect("statusFilter",STATUSES,"Alle statussen");fillSelect("documentType",DOC_TYPES);const settings=await all("settings");if(settings[0])applySettings(settings[0]);render();installExtraUI();render();if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});}
@@ -66,7 +66,7 @@ $("cancelPasteVacancyBottom").addEventListener("click",()=> $("pasteVacancyDialo
 function openVacancyFromText(text){
  const p=parseVacancyText(text);editingId=null;pendingVacancyText=p.fullText;$("vacancyForm").reset();
  $("jobTitle").value=p.title;$("company").value=p.company;$("location").value=p.location;$("hours").value=p.hours;
- $("salaryMin").value=p.salaryMin;$("salaryMax").value="";$("foundDate").value=dateToday();$("jobUrl").value=p.url;
+ $("salaryMin").value=p.salaryMin;$("salaryMax").value=p.salaryMax;$("foundDate").value=dateToday();$("jobUrl").value=p.url;
  $("jobStatus").value=STATUSES[0];$("jobNotes").value="";$("fullVacancyTextInput").value=p.fullText;$("vacancyDialog").showModal();
 }
 function loadBrowserLibrary(src,globalName){
