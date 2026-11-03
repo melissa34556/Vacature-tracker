@@ -1,4 +1,4 @@
-const CACHE = "sollicitatie-app-v31";
+const CACHE = "sollicitatie-app-v32";
 const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -32,6 +32,19 @@ self.addEventListener("fetch", event => {
       for (const key of ["title", "text", "url"]) {
         const value = form.get(key);
         if (value) query.set(key, String(value));
+      }
+      const sharedFiles = form.getAll("files").filter(value => value instanceof File && value.size > 0).slice(0, 10);
+      if (sharedFiles.length) {
+        const cache = await caches.open("vacature-share-inbox-v1");
+        const ids = [];
+        for (const file of sharedFiles) {
+          const id = crypto.randomUUID();
+          const key = new Request(new URL("./__shared_files/" + encodeURIComponent(id), self.location).toString());
+          const headers = new Headers({"Content-Type": file.type || "application/octet-stream", "X-File-Name": file.name || "gedeeld-bestand"});
+          await cache.put(key, new Response(file, {headers}));
+          ids.push(id);
+        }
+        query.set("sharedFiles", ids.join(","));
       }
       query.set("shared", "1");
       return Response.redirect(new URL("./?" + query.toString(), self.location).toString(), 303);
