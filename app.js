@@ -49,7 +49,7 @@ function parseVacancyText(text){
  if(!location){
   const m=clean.match(/(?:hoofdkantoor|standplaats|locatie)\s+([A-ZÀ-Ý][\p{L}'-]+(?:\s+[A-ZÀ-Ý][\p{L}'-]+){0,2})/iu);
   if(m)location=m[1];
-  else if(lines.length&&/^[A-ZÀ-Ý][\p{L}'-]+(?:,\s*[A-ZÀ-Ý][\p{L}'-]+)?$/.test(lines[0])&&lines[0].length<45)location=lines[0];
+  else if(lines.length&&/^[A-ZÀ-Ý][\p{L}'-]+(?:,\s*[A-ZÀ-Ý][\p{L}'-]+)?$/u.test(lines[0])&&lines[0].length<45)location=lines[0];
  }
  const hoursRaw=get("uren(?: per week)?|arbeidsduur|aantal uren|hours");
  let hours="";
