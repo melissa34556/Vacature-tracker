@@ -81,7 +81,7 @@ async function extractVacancyFile(file){
   pdfjs.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   const pdf=await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise,parts=[];
   for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){const page=await pdf.getPage(pageNo),content=await page.getTextContent();parts.push(content.items.map(x=>x.str||"").join(" "))}
-  return parts.join("\\n\\n");
+  return parts.join("\n\n");
  }
  if(ext==="docx"){
   const mammoth=await loadBrowserLibrary("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js","mammoth");
@@ -90,7 +90,7 @@ async function extractVacancyFile(file){
  throw new Error("Dit bestandstype wordt nog niet ondersteund. Gebruik voorlopig PDF, DOCX of TXT.");
 }
 $("parsePasteVacancy").addEventListener("click",()=>{const text=$("pasteVacancyText").value;if(!text.trim()){$("pasteParseMessage").textContent="Plak eerst de vacaturetekst.";return;}const p=parseVacancyText(text);$("pasteVacancyDialog").close();editingId=null;pendingVacancyText=p.fullText;$("vacancyForm").reset();$("jobTitle").value=p.title;$("company").value=p.company;$("location").value=p.location;$("hours").value=p.hours;$("salaryMin").value=p.salaryMin;$("salaryMax").value="";$("foundDate").value=dateToday();$("jobUrl").value=p.url;$("jobStatus").value=STATUSES[0];$("jobNotes").value="";$("fullVacancyTextInput").value=p.fullText;$("vacancyDialog").showModal()});
-$("chooseFileVacancy")?.addEventListener("click",()=>{$("addMethodDialog").close();$("vacancyFileImport").value="";$("fileImportMessage").textContent="";$("fileVacancyDialog").showModal()});
+$("chooseFileVacancy")?.addEventListener("click",()=>{$("addMethodDialog").close();$("vacancyImportFile").value="";$("fileImportMessage").textContent="";$("fileVacancyDialog").showModal()});
 $("cancelFileVacancy")?.addEventListener("click",()=> $("fileVacancyDialog").close());
 $("cancelFileVacancyBottom")?.addEventListener("click",()=> $("fileVacancyDialog").close());
 $("importFileVacancy")?.addEventListener("click",async()=>{const file=$("vacancyImportFile").files[0];if(!file){$("fileImportMessage").textContent="Kies eerst een bestand.";return;}const button=$("importFileVacancy");button.disabled=true;button.textContent="Bestand uitlezen…";try{const text=await extractVacancyFile(file);if(!text.trim())throw new Error("Er is geen leesbare tekst gevonden. Een scan of foto vraagt om tekstherkenning (OCR), die volgt later.");$("fileVacancyDialog").close();openVacancyFromText(text)}catch(err){$("fileImportMessage").textContent=err.message}finally{button.disabled=false;button.textContent="Gegevens herkennen"}});
