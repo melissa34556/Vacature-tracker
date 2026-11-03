@@ -103,16 +103,16 @@ const VACANCY_SECTION_RULES=[
  {label:"Wat bieden ze?",pattern:/^(?:wat bieden wij|wat bieden we|ons aanbod|arbeidsvoorwaarden|dit krijg je|wij bieden)$/i}
 ];
 function extractVacancySections(text){
- const lines=String(text||"").replace(/\\r\\n?/g,"\\n").split("\\n"),found=[];
+ const lines=String(text||"").replace(/\r/g,"").split("\n"),found=[];
  let current=null;
  for(const raw of lines){
-  const line=raw.trim().replace(/^#{1,4}\\s*/,"").replace(/\\s*[:：]$/,"").trim();
+  const line=raw.trim().replace(/^#{1,4}\s*/,"").replace(/\s*[:：]$/,"").trim();
   const rule=VACANCY_SECTION_RULES.find(x=>x.pattern.test(line));
   if(rule){if(current&&current.lines.length)found.push(current);current={label:rule.label,lines:[]};continue;}
   if(current)current.lines.push(raw);
  }
  if(current&&current.lines.length)found.push(current);
- return found.map(x=>({label:x.label,text:x.lines.join("\\n").trim()})).filter(x=>x.text).slice(0,3);
+ return found.map(x=>({label:x.label,text:x.lines.join("\n").trim()})).filter(x=>x.text).slice(0,3);
 }
 function vacancySummaryMarkup(v){
  if(!v.fullText)return "";
