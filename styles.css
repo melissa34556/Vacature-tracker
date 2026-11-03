@@ -101,3 +101,11 @@ dialog{border-radius:16px}.dialog-form{padding:17px;gap:11px}.dialog-heading h2{
 .topbar{background:transparent!important;color:var(--text)}
 .bottom-nav{background:var(--surface)!important;border-top:1px solid var(--line)!important;box-shadow:0 -1px 5px rgba(20,30,40,.025)!important}
 .bottom-nav .nav-item{background:transparent!important}
+
+
+/* Vacature import en leesbare bronweergave */
+#vacancyImportDialog,#vacancyPasteDialog,#vacancyTextDialog{border:0;border-radius:16px;padding:0;width:min(94vw,560px);max-height:90dvh;background:var(--surface);color:var(--text)}
+#vacancyImportDialog .dialog-form,#vacancyPasteDialog .dialog-form,#vacancyTextDialog .dialog-form{padding:18px;max-height:88dvh;overflow:auto}
+.vacancy-summary{margin:12px 0;line-height:1.6}
+.vacancy-summary h3{margin:0 0 8px}.vacancy-summary h4{margin:14px 0 4px;font-size:13px}.vacancy-summary p{font-size:13px;margin:4px 0;color:var(--text)}
+.full-vacancy-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.65;max-height:68dvh;overflow:auto}
