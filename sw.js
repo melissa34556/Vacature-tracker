@@ -33,7 +33,7 @@ self.addEventListener("fetch", event => {
         const value = form.get(key);
         if (value) query.set(key, String(value));
       }
-      const sharedFiles = form.getAll("files").filter(value => value instanceof File && value.size > 0).slice(0, 10);
+      const sharedFiles = form.getAll("files").filter(value => value instanceof File && value.size > 0 && value.size <= 25 * 1024 * 1024).slice(0, 10);
       if (sharedFiles.length) {
         const cache = await caches.open("vacature-share-inbox-v1");
         const ids = [];
