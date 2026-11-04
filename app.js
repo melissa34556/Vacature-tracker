@@ -95,8 +95,7 @@ async function processInboxItem(id){
   if(!text.trim()&&!item.url)throw new Error("Deze inzending bevat geen uitleesbare tekst of link.");
   if(!text.trim())text=item.title||item.url;
   openVacancyFromText(text);if(item.url&&!$("jobUrl").value)$("jobUrl").value=item.url;
-  if(item.title&&!$("jobTitle").value)$("jobTitle").value=item.title;
-  if(!$("company").value&&item.source)$("company").value=item.source.split(".")[0].replace(/^./,c=>c.toUpperCase());
+  if(item.title)$("jobTitle").value=item.title;
  }catch(err){processingInboxId=null;if($("inboxProcessMessage"))$("inboxProcessMessage").textContent=err.message;}
 }
 
