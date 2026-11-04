@@ -18,12 +18,13 @@ function vacancyCard(v){return `<article class="vacancy-card"><h3>${escapeHTML(v
 function render(){const query=($("vacancySearch").value||"").toLowerCase(),filter=$("statusFilter").value;const filtered=vacancies.filter(v=>(!filter||v.status===filter)&&(`${v.title} ${v.company}`.toLowerCase().includes(query)));$("vacancyList").innerHTML=filtered.length?filtered.sort((a,b)=>(b.foundDate||"").localeCompare(a.foundDate||"")).map(vacancyCard).join(""):"Geen vacatures gevonden.";const recent=[...vacancies].sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||"")).slice(0,3);$("recentVacancies").className=recent.length?"vacancy-list":"vacancy-list empty-state";$("recentVacancies").innerHTML=recent.length?recent.map(vacancyCard).join(""):"Je hebt nog geen vacatures toegevoegd."; $("statTotal").textContent=vacancies.length;$("statApplied").textContent=vacancies.filter(v=>v.status==="Gesolliciteerd").length;$("statInterviews").textContent=vacancies.filter(v=>["Uitgenodigd op gesprek","Eerste gesprek","Vervolggesprek"].includes(v.status)).length;$("statOffers").textContent=vacancies.filter(v=>v.status==="Aanbod ontvangen").length;renderDocs();renderContacts();renderReminders();}
 function renderDocs(){$("documentList").className=documents.length?"document-list":"document-list empty-state";$("documentList").innerHTML=documents.length?documents.map(d=>{const linked=(d.vacancyIds||[]).map(id=>vacancies.find(v=>v.id===id)).filter(Boolean);return `<article class="document-card"><div><h3>${escapeHTML(d.name)}</h3><span class="status-pill">${escapeHTML(d.type)}</span><p class="muted">${escapeHTML(d.note||"Geen notitie")} · ${new Date(d.addedAt).toLocaleDateString("nl-NL")}${linked.length?" · "+linked.map(v=>escapeHTML(v.company)).join(", "):""}</p></div><div class="card-actions"><button data-open-doc="${d.id}">Open</button><button class="danger" data-delete-doc="${d.id}">Verwijder</button></div></article>`}).join(""):"Nog geen documenten toegevoegd.";}
 let pendingVacancyText="";
+function updateJobUrlLink(url){const a=$("jobUrlOpen");if(!a)return;try{const parsed=new URL(String(url||"").trim());a.href=parsed.href;a.hidden=!/^https?:$/.test(parsed.protocol)}catch{a.hidden=true}}
 function openVacancy(v=null){
  if(!v){$("addMethodDialog").showModal();return;}
  editingId=v.id||null;$("vacancyForm").reset();
  $("jobTitle").value=v.title||"";$("company").value=v.company||"";$("location").value=v.location||"";$("hours").value=v.hours||"";
  $("salaryMin").value=v.salaryMin||v.salary||"";$("salaryMax").value=v.salaryMax||"";$("foundDate").value=v.foundDate||dateToday();
- $("jobUrl").value=v.url||"";$("jobStatus").value=v.status||STATUSES[0];$("jobNotes").value=v.notes||"";
+ $("jobUrl").value=v.url||"";updateJobUrlLink(v.url);$("jobStatus").value=v.status||STATUSES[0];$("jobNotes").value=v.notes||"";
  pendingVacancyText="";$("fullVacancyTextInput").value=v.fullText||"";$("vacancyDialog").showModal();
 }
 function labelledValue(text,labels){
@@ -103,7 +104,7 @@ async function extractInboxAttachments(){
 }
 function applyInboxSource(){
  const item=inboxItems.find(x=>x.id===processingInboxId);if(!item)return;
- if(item.url)$("jobUrl").value=item.url;
+ if(item.url){$("jobUrl").value=item.url;updateJobUrlLink(item.url)}
  if(item.title&&!$("jobTitle").value)$("jobTitle").value=item.title;
  if(!$("company").value&&item.url&&sourceFromUrl(item.url).includes("werkenbijkwantum"))$("company").value="Kwantum";
 }
@@ -187,7 +188,7 @@ async function extractVacancyFile(file){
  }
  throw new Error("Dit bestandstype wordt nog niet ondersteund. Gebruik PDF, DOCX, TXT of een JPG-, PNG- of WEBP-afbeelding.");
 }
-$("parsePasteVacancy").addEventListener("click",()=>{const text=[$("pasteVacancyText").value,inboxSupplementText].filter(Boolean).join("\n\n");if(!text.trim()){$("pasteParseMessage").textContent="Plak eerst de vacaturetekst.";return;}$("pasteVacancyDialog").close();openVacancyFromText(text)});
+$("parsePasteVacancy").addEventListener("click",async()=>{const attachmentText=await extractInboxAttachments();const text=[$("pasteVacancyText").value,inboxSupplementText,attachmentText].filter(Boolean).join("\n\n");if(!text.trim()){$("pasteParseMessage").textContent="Plak eerst de vacaturetekst.";return;}$("pasteVacancyDialog").close();openVacancyFromText(text)});
 $("chooseFileVacancy")?.addEventListener("click",()=>{$("addMethodDialog").close();$("vacancyImportFile").value="";$("fileImportMessage").textContent="";$("fileVacancyDialog").showModal()});
 $("cancelFileVacancy")?.addEventListener("click",()=> $("fileVacancyDialog").close());
 $("cancelFileVacancyBottom")?.addEventListener("click",()=> $("fileVacancyDialog").close());
@@ -343,9 +344,9 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-show-full-
 ["closeFullVacancyText","closeFullVacancyTextBottom"].forEach(id=>$(id)?.addEventListener("click",()=>$("fullVacancyTextDialog").close()));
 
 let inboxSupplementText="";
-$("inboxTryUrl")?.addEventListener("click",async()=>{const item=inboxItems.find(x=>x.id===processingInboxId);if(!item?.url){$("inboxImportMessage").textContent="Er is geen oorspronkelijke link bij deze inzending.";return;}const button=$("inboxTryUrl");button.disabled=true;button.textContent="Vacature ophalen…";try{const result=await fetchVacancyFromUrl(item.url);$("inboxImportDialog").close();openVacancyFromText([result.text,inboxSupplementText].filter(Boolean).join("\n\n"));}catch(err){$("inboxImportMessage").textContent=err instanceof TypeError||String(err.message).includes("Failed to fetch")?"Deze website blokkeert automatisch uitlezen. Open de oorspronkelijke link en plak de tekst of upload een bestand.":err.message;}finally{button.disabled=false;button.textContent="Automatisch uitlezen";}});
+$("inboxTryUrl")?.addEventListener("click",async()=>{const item=inboxItems.find(x=>x.id===processingInboxId);if(!item?.url){$("inboxImportMessage").textContent="Er is geen oorspronkelijke link bij deze inzending.";return;}const button=$("inboxTryUrl");button.disabled=true;button.textContent="Vacature ophalen…";try{const result=await fetchVacancyFromUrl(item.url);const attachmentText=await extractInboxAttachments();$("inboxImportDialog").close();openVacancyFromText([result.text,inboxSupplementText,attachmentText].filter(Boolean).join("\n\n"));}catch(err){$("inboxImportMessage").textContent=err instanceof TypeError||String(err.message).includes("Failed to fetch")?"Deze website blokkeert automatisch uitlezen. Open de oorspronkelijke link en plak de tekst of upload een bestand.":err.message;}finally{button.disabled=false;button.textContent="Automatisch uitlezen";}});
 $("inboxPasteText")?.addEventListener("click",()=>{$("inboxImportDialog").close();$("pasteVacancyText").value=inboxSupplementText||"";$("pasteParseMessage").textContent="";$("pasteVacancyDialog").showModal();});
 $("inboxUploadFile")?.addEventListener("click",()=>{$("inboxImportDialog").close();$("vacancyImportFile").value="";$("fileImportMessage").textContent="";$("fileVacancyDialog").showModal();});
 $("inboxCancelImport")?.addEventListener("click",()=>{$("inboxImportDialog").close();processingInboxId=null;inboxSupplementText="";});
 
-$("jobUrl")?.addEventListener("input",()=>{const a=$("jobUrlOpen"),u=$("jobUrl").value.trim();if(!a)return;try{const parsed=new URL(u);a.href=parsed.href;a.hidden=!/^https?:$/.test(parsed.protocol)}catch{a.hidden=true}});
+$("jobUrl")?.addEventListener("input",()=>updateJobUrlLink($("jobUrl").value));
