@@ -72,12 +72,16 @@ async function init(){db=await openDB();vacancies=await all("vacancies");documen
 
 
 function sourceFromUrl(url){try{return new URL(url).hostname.replace(/^www\./,"")}catch{return ""}}
+function sharedUrlFromText(text){
+ const match=String(text||"").match(/https?:\/\/[^\s<>"']+/i);if(!match)return "";
+ const candidate=match[0].replace(/[),.;!?]+$/,"");try{const url=new URL(candidate);return /^https?:$/.test(url.protocol)?url.href:""}catch{return ""}
+}
 function renderInbox(){
  const el=$("inboxList"),count=$("inboxCount");if(!el)return;
  const sorted=[...inboxItems].sort((a,b)=>(b.receivedAt||"").localeCompare(a.receivedAt||""));
  if(count)count.textContent=String(sorted.length);
  el.className=sorted.length?"vacancy-list":"empty-state";
- el.innerHTML=sorted.length?sorted.map(item=>'<article class="vacancy-card"><h3>'+escapeHTML(item.title||"Gedeelde vacature")+'</h3><p class="vacancy-meta">'+escapeHTML(item.source||sourceFromUrl(item.url)||"Gedeelde link")+(item.url?" · Link ontvangen":"")+'</p>'+(item.url?'<a class="inbox-original-link" href="'+escapeHTML(item.url)+'" target="_blank" rel="noopener">Open oorspronkelijke vacature ↗</a>':"")+(item.text?'<p class="muted">Tekst ontvangen</p>':"")+((item.files||[]).length?'<p class="muted">'+item.files.length+' bestand(en) ontvangen</p>':"")+'<p class="muted">'+new Date(item.receivedAt||Date.now()).toLocaleString("nl-NL")+'</p><div class="card-actions"><button class="primary-button compact" data-process-inbox="'+item.id+'">Vacature aanvullen</button><button class="danger" data-delete-inbox="'+item.id+'">Verwijderen</button></div></article>').join(""):"Je gedeelde links en bestanden verschijnen hier automatisch.";
+ el.innerHTML=sorted.length?sorted.map(item=>{const url=item.url||sharedUrlFromText(item.text),source=item.source||sourceFromUrl(url);return '<article class="vacancy-card"><h3>'+escapeHTML(item.title||"Gedeelde vacature")+'</h3>'+(source?'<p class="vacancy-meta">'+escapeHTML(source)+'</p>':"")+(url?'<a class="inbox-original-link" href="'+escapeHTML(url)+'" target="_blank" rel="noopener">Open oorspronkelijke vacature ↗</a>':"")+((item.files||[]).length?'<p class="muted">'+item.files.length+' bestand(en) ontvangen</p>':"")+'<p class="muted">'+new Date(item.receivedAt||Date.now()).toLocaleString("nl-NL")+'</p><div class="card-actions"><button class="primary-button compact" data-process-inbox="'+item.id+'">Vacature aanvullen</button><button class="danger" data-delete-inbox="'+item.id+'">Verwijderen</button></div></article>'}).join(""):"Je gedeelde links en bestanden verschijnen hier automatisch.";
 }
 async function receiveSharedItem(data){
  const url=(data.url||"").trim(),title=(data.title||"").trim(),text=String(data.text||"").trim();
