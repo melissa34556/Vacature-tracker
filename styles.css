@@ -128,3 +128,5 @@ dialog{border-radius:16px}.dialog-form{padding:17px;gap:11px}.dialog-heading h2{
 .dialog-form .muted{line-height:1.55}
 button:disabled{opacity:.6;cursor:wait}
 @media(max-width:390px){#inboxList .card-actions{grid-template-columns:minmax(0,1fr) auto}#inboxList .card-actions button{padding:9px 10px}}
+
+.inbox-original-link{display:inline-block;color:var(--accent);font-size:13px;font-weight:650;text-decoration:underline;overflow-wrap:anywhere}.dialog-form #inboxOriginalLink{padding:4px 0}.dialog-form #inboxProcessMessage:empty{display:none}
