@@ -76,7 +76,7 @@ function renderInbox(){
  const sorted=[...inboxItems].sort((a,b)=>(b.receivedAt||"").localeCompare(a.receivedAt||""));
  if(count)count.textContent=String(sorted.length);
  el.className=sorted.length?"vacancy-list":"empty-state";
- el.innerHTML=sorted.length?sorted.map(item=>'<article class="vacancy-card"><h3>'+escapeHTML(item.title||"Gedeelde vacature")+'</h3><p class="vacancy-meta">'+escapeHTML(item.source||sourceFromUrl(item.url)||"Gedeelde link")+(item.url?" · Link ontvangen":"")+'</p>'+(item.text?'<p class="muted">Tekst ontvangen</p>':"")+((item.files||[]).length?'<p class="muted">'+item.files.length+' bestand(en) ontvangen</p>':"")+'<p class="muted">'+new Date(item.receivedAt||Date.now()).toLocaleString("nl-NL")+'</p><div class="card-actions"><button class="primary-button compact" data-process-inbox="'+item.id+'">Vacature aanvullen</button><button class="danger" data-delete-inbox="'+item.id+'">Verwijderen</button></div></article>').join(""):"Je gedeelde links en bestanden verschijnen hier automatisch.";
+ el.innerHTML=sorted.length?sorted.map(item=>'<article class="vacancy-card"><h3>'+escapeHTML(item.title||"Gedeelde vacature")+'</h3><p class="vacancy-meta">'+escapeHTML(item.source||sourceFromUrl(item.url)||"Gedeelde link")+(item.url?" · Link ontvangen":"")+'</p>'+(item.url?'<a class="inbox-original-link" href="'+escapeHTML(item.url)+'" target="_blank" rel="noopener">Open oorspronkelijke vacature ↗</a>':"")+(item.text?'<p class="muted">Tekst ontvangen</p>':"")+((item.files||[]).length?'<p class="muted">'+item.files.length+' bestand(en) ontvangen</p>':"")+'<p class="muted">'+new Date(item.receivedAt||Date.now()).toLocaleString("nl-NL")+'</p><div class="card-actions"><button class="primary-button compact" data-process-inbox="'+item.id+'">Vacature aanvullen</button><button class="danger" data-delete-inbox="'+item.id+'">Verwijderen</button></div></article>').join(""):"Je gedeelde links en bestanden verschijnen hier automatisch.";
 }
 async function receiveSharedItem(data){
  const url=(data.url||"").trim(),title=(data.title||"").trim(),text=String(data.text||"").trim();
@@ -90,7 +90,7 @@ async function receiveSharedItem(data){
 async function processInboxItem(id){
  const item=inboxItems.find(x=>x.id===id);if(!item)return;
  processingInboxId=id;inboxSupplementText=item.text||"";
- $("inboxProcessMessage").textContent="";
+ $("inboxImportMessage").textContent="";
  $("inboxImportTitle").textContent=item.title||"Gedeelde vacature";
  const link=$("inboxOriginalLink");
  if(item.url){link.href=item.url;link.hidden=false;}else{link.removeAttribute("href");link.hidden=true;}
@@ -99,7 +99,7 @@ async function processInboxItem(id){
 async function extractInboxAttachments(){
  const item=inboxItems.find(x=>x.id===processingInboxId);if(!item||!item.files?.length)return "";
  const files=item.files.map(f=>new File([f.blob],f.name,{type:f.type}));
- return await importMultipleFiles(files,$("inboxProcessMessage"));
+ return await importMultipleFiles(files,$("fileImportMessage"));
 }
 function applyInboxSource(){
  const item=inboxItems.find(x=>x.id===processingInboxId);if(!item)return;
@@ -343,7 +343,9 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-show-full-
 ["closeFullVacancyText","closeFullVacancyTextBottom"].forEach(id=>$(id)?.addEventListener("click",()=>$("fullVacancyTextDialog").close()));
 
 let inboxSupplementText="";
-$("inboxTryUrl")?.addEventListener("click",async()=>{const item=inboxItems.find(x=>x.id===processingInboxId);if(!item?.url){$("inboxProcessMessage").textContent="Er is geen oorspronkelijke link bij deze inzending.";return;}const button=$("inboxTryUrl");button.disabled=true;button.textContent="Vacature ophalen…";try{const result=await fetchVacancyFromUrl(item.url);$("inboxImportDialog").close();openVacancyFromText([result.text,inboxSupplementText].filter(Boolean).join("\n\n"));}catch(err){$("inboxProcessMessage").textContent=err instanceof TypeError||String(err.message).includes("Failed to fetch")?"Deze website blokkeert automatisch uitlezen. Open de oorspronkelijke link en plak de tekst of upload een bestand.":err.message;}finally{button.disabled=false;button.textContent="Automatisch uitlezen";}});
+$("inboxTryUrl")?.addEventListener("click",async()=>{const item=inboxItems.find(x=>x.id===processingInboxId);if(!item?.url){$("inboxImportMessage").textContent="Er is geen oorspronkelijke link bij deze inzending.";return;}const button=$("inboxTryUrl");button.disabled=true;button.textContent="Vacature ophalen…";try{const result=await fetchVacancyFromUrl(item.url);$("inboxImportDialog").close();openVacancyFromText([result.text,inboxSupplementText].filter(Boolean).join("\n\n"));}catch(err){$("inboxImportMessage").textContent=err instanceof TypeError||String(err.message).includes("Failed to fetch")?"Deze website blokkeert automatisch uitlezen. Open de oorspronkelijke link en plak de tekst of upload een bestand.":err.message;}finally{button.disabled=false;button.textContent="Automatisch uitlezen";}});
 $("inboxPasteText")?.addEventListener("click",()=>{$("inboxImportDialog").close();$("pasteVacancyText").value=inboxSupplementText||"";$("pasteParseMessage").textContent="";$("pasteVacancyDialog").showModal();});
 $("inboxUploadFile")?.addEventListener("click",()=>{$("inboxImportDialog").close();$("vacancyImportFile").value="";$("fileImportMessage").textContent="";$("fileVacancyDialog").showModal();});
 $("inboxCancelImport")?.addEventListener("click",()=>{$("inboxImportDialog").close();processingInboxId=null;inboxSupplementText="";});
+
+$("jobUrl")?.addEventListener("input",()=>{const a=$("jobUrlOpen"),u=$("jobUrl").value.trim();if(!a)return;try{const parsed=new URL(u);a.href=parsed.href;a.hidden=!/^https?:$/.test(parsed.protocol)}catch{a.hidden=true}});
