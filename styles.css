@@ -112,3 +112,19 @@ dialog{border-radius:16px}.dialog-form{padding:17px;gap:11px}.dialog-heading h2{
 .optional-full-text{border-top:1px solid var(--line);padding-top:12px}.optional-full-text summary{font-weight:600;cursor:pointer;padding:8px 0}
 
 #inboxList .vacancy-card{display:grid;gap:4px}#inboxList .card-actions{flex-wrap:wrap}#inboxList .card-actions .primary-button{color:#fff;background:var(--accent)}.bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr))}@media(min-width:700px){.bottom-nav{grid-template-columns:repeat(5,1fr)}}
+
+
+/* Verzamelinbox en import: rustiger, duidelijkere hiërarchie en betere touch-targets */
+#inbox .section-heading{margin-top:10px}
+#inbox>p.muted{max-width:66ch;line-height:1.55}
+#inboxList{margin-top:14px;gap:12px}
+#inboxList .vacancy-card{padding:15px;gap:7px;border-radius:13px}
+#inboxList .vacancy-card h3{font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+#inboxList .vacancy-meta{display:flex;flex-wrap:wrap;gap:4px 8px}
+#inboxList .card-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;margin-top:5px}
+#inboxList .card-actions button{min-height:40px}
+#inboxList .card-actions .primary-button{padding:10px 14px;font-size:12px}
+#inboxProcessMessage:empty{display:none}
+.dialog-form .muted{line-height:1.55}
+button:disabled{opacity:.6;cursor:wait}
+@media(max-width:390px){#inboxList .card-actions{grid-template-columns:minmax(0,1fr) auto}#inboxList .card-actions button{padding:9px 10px}}
