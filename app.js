@@ -153,10 +153,10 @@ $("fetchLinkVacancy")?.addEventListener("click",async()=>{
 $("cancelPasteVacancy").addEventListener("click",()=> $("pasteVacancyDialog").close());
 $("cancelPasteVacancyBottom").addEventListener("click",()=> $("pasteVacancyDialog").close());
 function openVacancyFromText(text){
- const p=parseVacancyText(text);editingId=null;pendingVacancyText=p.fullText;$("vacancyForm").reset();
+ const p=parseVacancyText(text),inboxItem=inboxItems.find(x=>x.id===processingInboxId);editingId=null;pendingVacancyText=p.fullText;$("vacancyForm").reset();
  $("jobTitle").value=p.title;$("company").value=p.company;$("location").value=p.location;$("hours").value=p.hours;
- $("salaryMin").value=p.salaryMin;$("salaryMax").value=p.salaryMax;$("foundDate").value=dateToday();$("jobUrl").value=p.url;
- $("jobStatus").value=STATUSES[0];$("jobNotes").value="";$("fullVacancyTextInput").value=p.fullText;applyInboxSource();$("vacancyDialog").showModal();
+ $("salaryMin").value=p.salaryMin;$("salaryMax").value=p.salaryMax;$("foundDate").value=dateToday();$("jobUrl").value=p.url||inboxItem?.url||"";updateJobUrlLink($("jobUrl").value);
+ $("jobStatus").value=STATUSES[0];$("jobNotes").value="";$("fullVacancyTextInput").value=p.fullText;applyInboxSource();updateJobUrlLink($("jobUrl").value);$("vacancyDialog").showModal();
 }
 function loadBrowserLibrary(src,globalName){
  if(window[globalName])return Promise.resolve(window[globalName]);
