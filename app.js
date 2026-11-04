@@ -89,51 +89,25 @@ async function receiveSharedItem(data){
 }
 async function processInboxItem(id){
  const item=inboxItems.find(x=>x.id===id);if(!item)return;
- processingInboxId=id;
- const message=$("inboxProcessMessage");
- if(message)message.textContent="";
- let text=item.text||"";
- try{
-  // Shared files and pasted text are extracted only when the user chooses to complete the item.
-  if(item.files&&item.files.length){
-   const files=item.files.map(f=>new File([f.blob],f.name,{type:f.type}));
-   const extracted=await importMultipleFiles(files,message);
-   text=[text,extracted].filter(Boolean).join("\n\n");
-  }
-  // Prefer the original vacancy page when a URL was shared. This is intentionally
-  // deferred until this button is pressed; CORS/login restrictions still apply.
-  if(item.url){
-   try{
-    const result=await fetchVacancyFromUrl(item.url);
-    openVacancyFromText(result.text);
-    $("jobUrl").value=result.url;
-    if(!$("company").value){
-     const host=new URL(result.url).hostname.replace(/^www\./,"").split(".")[0];
-     if(host==="werkenbijkwantum")$("company").value="Kwantum";
-    }
-    if(item.title&&!$("jobTitle").value)$("jobTitle").value=item.title;
-    return;
-   }catch(error){
-    if(!text.trim()){
-     $("vacancyUrlInput").value=item.url;
-     $("linkImportMessage").textContent=error instanceof TypeError||String(error.message).includes("Failed to fetch")
-      ?"Deze website blokkeert automatisch uitlezen (bijvoorbeeld door CORS of een login). Plak de vacaturetekst of upload een bestand."
-      :error.message;
-     $("linkVacancyDialog").showModal();
-     return;
-    }
-    if(message)message.textContent="De link kon niet automatisch worden uitgelezen. De gedeelde tekst wordt gebruikt.";
-   }
-  }
-  if(!text.trim())throw new Error("Deze inzending bevat geen vacaturetekst, bestand of uitleesbare link.");
-  openVacancyFromText(text);
-  if(item.url&&!$("jobUrl").value)$("jobUrl").value=item.url;
-  if(item.title&&!$("jobTitle").value)$("jobTitle").value=item.title;
- }catch(err){
-  processingInboxId=null;
-  if(message)message.textContent=err.message||"De vacature kon niet worden verwerkt.";
- }
+ processingInboxId=id;inboxSupplementText=item.text||"";
+ $("inboxProcessMessage").textContent="";
+ $("inboxImportTitle").textContent=item.title||"Gedeelde vacature";
+ const link=$("inboxOriginalLink");
+ if(item.url){link.href=item.url;link.hidden=false;}else{link.removeAttribute("href");link.hidden=true;}
+ $("inboxImportDialog").showModal();
 }
+async function extractInboxAttachments(){
+ const item=inboxItems.find(x=>x.id===processingInboxId);if(!item||!item.files?.length)return "";
+ const files=item.files.map(f=>new File([f.blob],f.name,{type:f.type}));
+ return await importMultipleFiles(files,$("inboxProcessMessage"));
+}
+function applyInboxSource(){
+ const item=inboxItems.find(x=>x.id===processingInboxId);if(!item)return;
+ if(item.url)$("jobUrl").value=item.url;
+ if(item.title&&!$("jobTitle").value)$("jobTitle").value=item.title;
+ if(!$("company").value&&item.url&&sourceFromUrl(item.url).includes("werkenbijkwantum"))$("company").value="Kwantum";
+}
+
 
 function renderContacts(){const el=$("contactList");if(!el)return;el.className=contacts.length?"vacancy-list":"vacancy-list empty-state";el.innerHTML=contacts.length?contacts.map(c=>{const v=vacancies.find(x=>x.id===c.vacancyId);return `<article class="vacancy-card"><h3>${escapeHTML(c.name)}</h3><p class="vacancy-meta">${escapeHTML(c.company||"")}${c.role?" · "+escapeHTML(c.role):""}${v?" · "+escapeHTML(v.title):""}</p><p class="muted">${escapeHTML(c.email||"")}${c.phone?" · "+escapeHTML(c.phone):""}</p><div class="card-actions"><button data-edit-contact="${c.id}">Bewerken</button><button class="danger" data-delete-contact="${c.id}">Verwijderen</button></div></article>`}).join(""):"Nog geen contacten toegevoegd.";}
 function renderReminders(){const el=$("reminderList");if(!el)return;const sorted=[...reminders].sort((a,b)=>a.date.localeCompare(b.date));el.className=sorted.length?"vacancy-list":"vacancy-list empty-state";el.innerHTML=sorted.length?sorted.map(r=>{const v=vacancies.find(x=>x.id===r.vacancyId);return `<article class="vacancy-card"><h3>${escapeHTML(r.title)}</h3><p class="vacancy-meta">${new Date(r.date+"T12:00:00").toLocaleDateString("nl-NL")}${r.time?" · "+escapeHTML(r.time):""}${v?" · "+escapeHTML(v.company+" – "+v.title):""}</p><p class="muted">${escapeHTML(r.note||"")}</p><div class="card-actions"><button class="danger" data-delete-reminder="${r.id}">Verwijderen</button></div></article>`}).join(""):"Nog geen herinneringen gepland.";}
@@ -181,7 +155,7 @@ function openVacancyFromText(text){
  const p=parseVacancyText(text);editingId=null;pendingVacancyText=p.fullText;$("vacancyForm").reset();
  $("jobTitle").value=p.title;$("company").value=p.company;$("location").value=p.location;$("hours").value=p.hours;
  $("salaryMin").value=p.salaryMin;$("salaryMax").value=p.salaryMax;$("foundDate").value=dateToday();$("jobUrl").value=p.url;
- $("jobStatus").value=STATUSES[0];$("jobNotes").value="";$("fullVacancyTextInput").value=p.fullText;$("vacancyDialog").showModal();
+ $("jobStatus").value=STATUSES[0];$("jobNotes").value="";$("fullVacancyTextInput").value=p.fullText;applyInboxSource();$("vacancyDialog").showModal();
 }
 function loadBrowserLibrary(src,globalName){
  if(window[globalName])return Promise.resolve(window[globalName]);
@@ -213,11 +187,11 @@ async function extractVacancyFile(file){
  }
  throw new Error("Dit bestandstype wordt nog niet ondersteund. Gebruik PDF, DOCX, TXT of een JPG-, PNG- of WEBP-afbeelding.");
 }
-$("parsePasteVacancy").addEventListener("click",()=>{const text=$("pasteVacancyText").value;if(!text.trim()){$("pasteParseMessage").textContent="Plak eerst de vacaturetekst.";return;}const p=parseVacancyText(text);$("pasteVacancyDialog").close();editingId=null;pendingVacancyText=p.fullText;$("vacancyForm").reset();$("jobTitle").value=p.title;$("company").value=p.company;$("location").value=p.location;$("hours").value=p.hours;$("salaryMin").value=p.salaryMin;$("salaryMax").value=p.salaryMax;$("foundDate").value=dateToday();$("jobUrl").value=p.url;$("jobStatus").value=STATUSES[0];$("jobNotes").value="";$("fullVacancyTextInput").value=p.fullText;$("vacancyDialog").showModal()});
+$("parsePasteVacancy").addEventListener("click",()=>{const text=[$("pasteVacancyText").value,inboxSupplementText].filter(Boolean).join("\n\n");if(!text.trim()){$("pasteParseMessage").textContent="Plak eerst de vacaturetekst.";return;}$("pasteVacancyDialog").close();openVacancyFromText(text)});
 $("chooseFileVacancy")?.addEventListener("click",()=>{$("addMethodDialog").close();$("vacancyImportFile").value="";$("fileImportMessage").textContent="";$("fileVacancyDialog").showModal()});
 $("cancelFileVacancy")?.addEventListener("click",()=> $("fileVacancyDialog").close());
 $("cancelFileVacancyBottom")?.addEventListener("click",()=> $("fileVacancyDialog").close());
-$("importFileVacancy")?.addEventListener("click",async()=>{const files=Array.from($("vacancyImportFile").files||[]);if(!files.length){$("fileImportMessage").textContent="Kies eerst een of meer bestanden.";return;}const button=$("importFileVacancy");button.disabled=true;button.textContent="Bestanden uitlezen…";try{const text=await importMultipleFiles(files,$("fileImportMessage"));$("fileVacancyDialog").close();openVacancyFromText(text)}catch(err){$("fileImportMessage").textContent=err.message}finally{button.disabled=false;button.textContent="Gegevens herkennen"}});
+$("importFileVacancy")?.addEventListener("click",async()=>{const files=Array.from($("vacancyImportFile").files||[]);if(!files.length){$("fileImportMessage").textContent="Kies eerst een of meer bestanden.";return;}const button=$("importFileVacancy");button.disabled=true;button.textContent="Bestanden uitlezen…";try{const text=[await extractInboxAttachments(),inboxSupplementText,await importMultipleFiles(files,$("fileImportMessage"))].filter(Boolean).join("\n\n");$("fileVacancyDialog").close();openVacancyFromText(text)}catch(err){$("fileImportMessage").textContent=err.message}finally{button.disabled=false;button.textContent="Gegevens herkennen"}});
 
 function normalizeOverlapLine(line){return String(line||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 function overlapCount(left,right){
@@ -367,3 +341,9 @@ document.addEventListener("submit",async e=>{if(e.target.id==="vacancyFileForm")
 
 document.addEventListener("click",e=>{const b=e.target.closest("[data-show-full-text]");if(!b)return;const v=vacancies.find(x=>x.id===b.dataset.showFullText);if(!v)return;$("fullVacancyTextContent").textContent=v.fullText||"";$("fullVacancyTextDialog").showModal()});
 ["closeFullVacancyText","closeFullVacancyTextBottom"].forEach(id=>$(id)?.addEventListener("click",()=>$("fullVacancyTextDialog").close()));
+
+let inboxSupplementText="";
+$("inboxTryUrl")?.addEventListener("click",async()=>{const item=inboxItems.find(x=>x.id===processingInboxId);if(!item?.url){$("inboxProcessMessage").textContent="Er is geen oorspronkelijke link bij deze inzending.";return;}const button=$("inboxTryUrl");button.disabled=true;button.textContent="Vacature ophalen…";try{const result=await fetchVacancyFromUrl(item.url);$("inboxImportDialog").close();openVacancyFromText([result.text,inboxSupplementText].filter(Boolean).join("\n\n"));}catch(err){$("inboxProcessMessage").textContent=err instanceof TypeError||String(err.message).includes("Failed to fetch")?"Deze website blokkeert automatisch uitlezen. Open de oorspronkelijke link en plak de tekst of upload een bestand.":err.message;}finally{button.disabled=false;button.textContent="Automatisch uitlezen";}});
+$("inboxPasteText")?.addEventListener("click",()=>{$("inboxImportDialog").close();$("pasteVacancyText").value=inboxSupplementText||"";$("pasteParseMessage").textContent="";$("pasteVacancyDialog").showModal();});
+$("inboxUploadFile")?.addEventListener("click",()=>{$("inboxImportDialog").close();$("vacancyImportFile").value="";$("fileImportMessage").textContent="";$("fileVacancyDialog").showModal();});
+$("inboxCancelImport")?.addEventListener("click",()=>{$("inboxImportDialog").close();processingInboxId=null;inboxSupplementText="";});
