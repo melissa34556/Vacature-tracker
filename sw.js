@@ -1,4 +1,4 @@
-const CACHE = "sollicitatie-app-v37";
+const CACHE = "sollicitatie-app-v38";
 const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
