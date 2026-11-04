@@ -67,7 +67,45 @@ function parseVacancyText(text){
  const ref=clean.match(/(?:ref(?:erentie)?\s*(?:no|nr|nummer)?\s*[:#]?\s*)([A-Z0-9-]+)/i);
  return {title,company,location,hours,salaryMin,salaryMax,url,fullText:text,reference:ref?.[1]||""};
 }
-function startPasteImport(){$("addMethodDialog").close();$("pasteVacancyText").value="";$("pasteParseMessage").textContent="";$("pasteVacancyDialog").showModal();}
+
+function getAiEndpoint(){return (localStorage.getItem("vacatureAiEndpoint")||"").trim().replace(/\/$/,"");}
+async function analyzeVacancyWithAI(text,target){
+ const endpoint=getAiEndpoint();
+ if(!endpoint)throw new Error("Stel eerst de AI-koppeling in bij Instellingen.");
+ const clean=String(text||"").trim();
+ if(clean.length<80)throw new Error("Er staat te weinig vacaturetekst in om te analyseren.");
+ if(clean.length>60000)throw new Error("De tekst is erg lang. Beperk de invoer tot maximaal 60.000 tekens.");
+ if(!confirm("De vacaturetekst wordt naar Google Gemini gestuurd om te analyseren. Deel geen persoonsgegevens die niet nodig zijn. Wil je doorgaan?"))return null;
+ if(target)target.textContent="AI analyseert de vacature…";
+ const response=await fetch(endpoint+"/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:clean})});
+ let payload={};try{payload=await response.json()}catch{}
+ if(!response.ok)throw new Error(payload.error||"AI-analyse is niet gelukt (HTTP "+response.status+").");
+ return payload;
+}
+function applyAiVacancyResult(result,originalText){
+ if(!result)return;
+ if(result.title)$("jobTitle").value=result.title;
+ if(result.company)$("company").value=result.company;
+ if(result.location)$("location").value=result.location;
+ if(result.hours)$("hours").value=result.hours;
+ if(result.salaryMin)$("salaryMin").value=result.salaryMin;
+ if(result.salaryMax)$("salaryMax").value=result.salaryMax;
+ const summary=[result.summary,result.tasks?"Werkzaamheden: "+result.tasks:"",result.requirements?"Gezocht profiel: "+result.requirements:"",result.offer?"Wat wordt geboden: "+result.offer:""].filter(Boolean).join("\n\n");
+ if(summary)$("jobNotes").value=summary;
+ $("fullVacancyTextInput").value=originalText;
+}
+async function runAiImport(text,dialogId,messageId,button){
+ if(!text||!text.trim()){ $(messageId).textContent="Er is geen vacaturetekst gevonden."; return; }
+ button.disabled=true;const old=button.textContent;button.textContent="AI analyseert…";
+ try{
+  const result=await analyzeVacancyWithAI(text,$(messageId));
+  if(!result)return;
+  $(dialogId).close();openVacancyFromText(text);applyAiVacancyResult(result,text);
+  $(messageId).textContent="AI-analyse klaar. Controleer alle gegevens voordat je opslaat.";
+ }catch(error){$(messageId).textContent=error.message||"AI-analyse is niet gelukt."}
+ finally{button.disabled=false;button.textContent=old;}
+}
+\nfunction startPasteImport(){$("addMethodDialog").close();$("pasteVacancyText").value="";$("pasteParseMessage").textContent="";$("pasteVacancyDialog").showModal();}
 async function init(){db=await openDB();vacancies=await all("vacancies");documents=await all("documents");contacts=await all("contacts");reminders=await all("reminders");inboxItems=await all("inbox");fillSelect("jobStatus",STATUSES);fillSelect("statusFilter",STATUSES,"Alle statussen");fillSelect("documentType",DOC_TYPES);const settings=await all("settings");if(settings[0])applySettings(settings[0]);render();installExtraUI();render();if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});}
 
 
@@ -193,9 +231,13 @@ async function extractVacancyFile(file){
  throw new Error("Dit bestandstype wordt nog niet ondersteund. Gebruik PDF, DOCX, TXT of een JPG-, PNG- of WEBP-afbeelding.");
 }
 $("parsePasteVacancy").addEventListener("click",async()=>{const attachmentText=await extractInboxAttachments();const text=[$("pasteVacancyText").value,inboxSupplementText,attachmentText].filter(Boolean).join("\n\n");if(!text.trim()){$("pasteParseMessage").textContent="Plak eerst de vacaturetekst.";return;}$("pasteVacancyDialog").close();openVacancyFromText(text)});
+$("parsePasteWithAI")?.addEventListener("click",async()=>{const attachmentText=await extractInboxAttachments();const text=[$("pasteVacancyText").value,inboxSupplementText,attachmentText].filter(Boolean).join("\n\n");await runAiImport(text,"pasteVacancyDialog","pasteParseMessage",$("parsePasteWithAI"));});
+
 $("chooseFileVacancy")?.addEventListener("click",()=>{$("addMethodDialog").close();$("vacancyImportFile").value="";$("fileImportMessage").textContent="";$("fileVacancyDialog").showModal()});
 $("cancelFileVacancy")?.addEventListener("click",()=> $("fileVacancyDialog").close());
 $("cancelFileVacancyBottom")?.addEventListener("click",()=> $("fileVacancyDialog").close());
+
+$("importFileWithAI")?.addEventListener("click",async()=>{const files=Array.from($("vacancyImportFile").files||[]);if(!files.length){$("fileImportMessage").textContent="Kies eerst een of meer bestanden.";return;}const button=$("importFileWithAI");button.disabled=true;const old=button.textContent;button.textContent="Bestanden uitlezen…";try{const text=[await extractInboxAttachments(),inboxSupplementText,await importMultipleFiles(files,$("fileImportMessage"))].filter(Boolean).join("\n\n");await runAiImport(text,"fileVacancyDialog","fileImportMessage",button);}catch(err){$("fileImportMessage").textContent=err.message}finally{button.disabled=false;button.textContent=old;}});
 $("importFileVacancy")?.addEventListener("click",async()=>{const files=Array.from($("vacancyImportFile").files||[]);if(!files.length){$("fileImportMessage").textContent="Kies eerst een of meer bestanden.";return;}const button=$("importFileVacancy");button.disabled=true;button.textContent="Bestanden uitlezen…";try{const text=[await extractInboxAttachments(),inboxSupplementText,await importMultipleFiles(files,$("fileImportMessage"))].filter(Boolean).join("\n\n");$("fileVacancyDialog").close();openVacancyFromText(text)}catch(err){$("fileImportMessage").textContent=err.message}finally{button.disabled=false;button.textContent="Gegevens herkennen"}});
 
 function normalizeOverlapLine(line){return String(line||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim()}
@@ -355,3 +397,6 @@ $("inboxUploadFile")?.addEventListener("click",()=>{$("inboxImportDialog").close
 $("inboxCancelImport")?.addEventListener("click",()=>{$("inboxImportDialog").close();processingInboxId=null;inboxSupplementText="";});
 
 $("jobUrl")?.addEventListener("input",()=>updateJobUrlLink($("jobUrl").value));
+$("aiEndpoint").value=getAiEndpoint();
+$("saveAiEndpoint")?.addEventListener("click",()=>{const value=$("aiEndpoint").value.trim().replace(/\/$/,"");if(value&&!/^https:\/\//i.test(value)){$("aiSettingsMessage").textContent="Gebruik een beveiligd https-adres.";return;}localStorage.setItem("vacatureAiEndpoint",value);$("aiSettingsMessage").textContent=value?"AI-koppeling opgeslagen.":"AI-koppeling verwijderd.";});
+
