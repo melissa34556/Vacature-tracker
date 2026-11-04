@@ -93,7 +93,7 @@ async function processInboxItem(id){
  try{
   if(item.files&&item.files.length){const files=item.files.map(f=>new File([f.blob],f.name,{type:f.type}));const extracted=await importMultipleFiles(files,$("inboxProcessMessage"));text=[text,extracted].filter(Boolean).join("\n\n");}
   if(!text.trim()&&!item.url)throw new Error("Deze inzending bevat geen uitleesbare tekst of link.");
-  if(!text.trim())text=item.title||item.url;
+  if(!text.trim())text=item.title||"";
   openVacancyFromText(text);if(item.url&&!$("jobUrl").value)$("jobUrl").value=item.url;
   if(item.title)$("jobTitle").value=item.title;
  }catch(err){processingInboxId=null;if($("inboxProcessMessage"))$("inboxProcessMessage").textContent=err.message;}
