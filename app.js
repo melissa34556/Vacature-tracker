@@ -89,14 +89,50 @@ async function receiveSharedItem(data){
 }
 async function processInboxItem(id){
  const item=inboxItems.find(x=>x.id===id);if(!item)return;
- processingInboxId=id;let text=item.text||item.title||"";
+ processingInboxId=id;
+ const message=$("inboxProcessMessage");
+ if(message)message.textContent="";
+ let text=item.text||"";
  try{
-  if(item.files&&item.files.length){const files=item.files.map(f=>new File([f.blob],f.name,{type:f.type}));const extracted=await importMultipleFiles(files,$("inboxProcessMessage"));text=[text,extracted].filter(Boolean).join("\n\n");}
-  if(!text.trim()&&!item.url)throw new Error("Deze inzending bevat geen uitleesbare tekst of link.");
-  if(!text.trim())text=item.title||"";
-  openVacancyFromText(text);if(item.url&&!$("jobUrl").value)$("jobUrl").value=item.url;
-  if(item.title)$("jobTitle").value=item.title;
- }catch(err){processingInboxId=null;if($("inboxProcessMessage"))$("inboxProcessMessage").textContent=err.message;}
+  // Shared files and pasted text are extracted only when the user chooses to complete the item.
+  if(item.files&&item.files.length){
+   const files=item.files.map(f=>new File([f.blob],f.name,{type:f.type}));
+   const extracted=await importMultipleFiles(files,message);
+   text=[text,extracted].filter(Boolean).join("\n\n");
+  }
+  // Prefer the original vacancy page when a URL was shared. This is intentionally
+  // deferred until this button is pressed; CORS/login restrictions still apply.
+  if(item.url){
+   try{
+    const result=await fetchVacancyFromUrl(item.url);
+    openVacancyFromText(result.text);
+    $("jobUrl").value=result.url;
+    if(!$("company").value){
+     const host=new URL(result.url).hostname.replace(/^www\./,"").split(".")[0];
+     if(host==="werkenbijkwantum")$("company").value="Kwantum";
+    }
+    if(item.title&&!$("jobTitle").value)$("jobTitle").value=item.title;
+    return;
+   }catch(error){
+    if(!text.trim()){
+     $("vacancyUrlInput").value=item.url;
+     $("linkImportMessage").textContent=error instanceof TypeError||String(error.message).includes("Failed to fetch")
+      ?"Deze website blokkeert automatisch uitlezen (bijvoorbeeld door CORS of een login). Plak de vacaturetekst of upload een bestand."
+      :error.message;
+     $("linkVacancyDialog").showModal();
+     return;
+    }
+    if(message)message.textContent="De link kon niet automatisch worden uitgelezen. De gedeelde tekst wordt gebruikt.";
+   }
+  }
+  if(!text.trim())throw new Error("Deze inzending bevat geen vacaturetekst, bestand of uitleesbare link.");
+  openVacancyFromText(text);
+  if(item.url&&!$("jobUrl").value)$("jobUrl").value=item.url;
+  if(item.title&&!$("jobTitle").value)$("jobTitle").value=item.title;
+ }catch(err){
+  processingInboxId=null;
+  if(message)message.textContent=err.message||"De vacature kon niet worden verwerkt.";
+ }
 }
 
 function renderContacts(){const el=$("contactList");if(!el)return;el.className=contacts.length?"vacancy-list":"vacancy-list empty-state";el.innerHTML=contacts.length?contacts.map(c=>{const v=vacancies.find(x=>x.id===c.vacancyId);return `<article class="vacancy-card"><h3>${escapeHTML(c.name)}</h3><p class="vacancy-meta">${escapeHTML(c.company||"")}${c.role?" · "+escapeHTML(c.role):""}${v?" · "+escapeHTML(v.title):""}</p><p class="muted">${escapeHTML(c.email||"")}${c.phone?" · "+escapeHTML(c.phone):""}</p><div class="card-actions"><button data-edit-contact="${c.id}">Bewerken</button><button class="danger" data-delete-contact="${c.id}">Verwijderen</button></div></article>`}).join(""):"Nog geen contacten toegevoegd.";}
