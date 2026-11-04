@@ -36,6 +36,7 @@
       <div id="vacancyList" class="vacancy-list empty-state">Nog geen vacatures.</div><div id="vacancyBoard" class="kanban-board" hidden></div>
     </section>
 
+    <section id="inbox" class="page"><div class="section-heading"><div><p class="eyebrow">VERZAMELEN</p><h2>Verzamelinbox <span id="inboxCount" class="muted">0</span></h2></div></div><p class="muted">Deel vacatures vanuit LinkedIn, Brave of een andere app. Ze worden hier bewaard, zodat je ze later rustig kunt aanvullen.</p><p id="inboxProcessMessage" class="muted" role="status"></p><div id="inboxList" class="vacancy-list empty-state">Je gedeelde links en bestanden verschijnen hier automatisch.</div></section>
     <section id="statistics" class="page"><p class="eyebrow">INZICHT</p><h2>Statistieken</h2><label class="period-label">Periode<select id="statsPeriod" class="field"><option value="month">Deze maand</option><option value="quarter">Afgelopen 3 maanden</option><option value="year">Dit jaar</option><option value="all">Alles</option></select></label><div id="statisticsContent" class="panel"></div><div id="statusBreakdown" class="panel"></div></section>
 
     <section id="vacancyDetail" class="page"><button class="text-button back-button" data-page="vacancies">← Terug naar vacatures</button><div id="vacancyDetailContent"></div></section>
@@ -67,7 +68,7 @@
     </section>
   </main>
 
-  <nav class="bottom-nav" aria-label="Hoofdnavigatie"><button class="nav-item selected" data-page="dashboard"><span>⌂</span>Overzicht</button><button class="nav-item" data-page="vacancies"><span>▤</span>Vacatures</button><button class="nav-item" data-page="contacts"><span>♙</span>Contacten</button><button class="nav-item" data-page="statistics"><span>▥</span>Statistieken</button></nav>
+  <nav class="bottom-nav" aria-label="Hoofdnavigatie"><button class="nav-item selected" data-page="dashboard"><span>⌂</span>Overzicht</button><button class="nav-item" data-page="vacancies"><span>▤</span>Vacatures</button><button class="nav-item" data-page="inbox"><span>↧</span>Verzamelen</button><button class="nav-item" data-page="contacts"><span>♙</span>Contacten</button><button class="nav-item" data-page="statistics"><span>▥</span>Statistieken</button></nav>
 
   <dialog id="addMethodDialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">NIEUWE VACATURE</p><h2>Hoe wil je toevoegen?</h2></div><button type="button" class="icon-button" onclick="document.getElementById('addMethodDialog').close()">✕</button></div><button type="button" id="chooseManualVacancy" class="secondary-button">Handmatig invoeren</button><button type="button" id="chooseLinkVacancy" class="secondary-button">Via link toevoegen</button><button type="button" id="choosePasteVacancy" class="primary-button">Vacaturetekst plakken</button>
       <button type="button" id="chooseFileVacancy" class="secondary-button">Document of foto uploaden</button><p class="muted">Tip: open een vacature in je browser en kies Delen om de link of meegestuurde tekst naar deze app te sturen. Dit werkt alleen als je browser de deeloptie ondersteunt.</p></div></dialog>
@@ -89,6 +90,6 @@
     </form>
   </dialog>
   <dialog id="fullVacancyTextDialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">OORSPRONKELIJKE TEKST</p><h2>Volledige vacaturetekst</h2></div><button type="button" class="icon-button" id="closeFullVacancyText" aria-label="Sluiten">✕</button></div><pre id="fullVacancyTextContent" class="full-vacancy-text"></pre><div class="dialog-actions"><button type="button" class="primary-button" id="closeFullVacancyTextBottom">Sluiten</button></div></div></dialog>
-  <script src="app.js?v=34"></script>
+  <script src="app.js?v=35"></script>
 </body>
 </html>
