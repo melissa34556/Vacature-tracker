@@ -110,3 +110,5 @@ dialog{border-radius:16px}.dialog-form{padding:17px;gap:11px}.dialog-heading h2{
 .vacancy-summary{border-top:1px solid var(--line);margin-top:18px;padding-top:14px}.vacancy-summary h3{margin-bottom:10px}.summary-section{padding:10px 0;border-bottom:1px solid var(--line)}.summary-section:last-child{border-bottom:0}.summary-section h4{margin:0 0 6px;font-size:14px}.summary-section p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;font-size:14px}
 
 .optional-full-text{border-top:1px solid var(--line);padding-top:12px}.optional-full-text summary{font-weight:600;cursor:pointer;padding:8px 0}
+
+#inboxList .vacancy-card{display:grid;gap:4px}#inboxList .card-actions{flex-wrap:wrap}#inboxList .card-actions .primary-button{color:#fff;background:var(--accent)}.bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr))}@media(min-width:700px){.bottom-nav{grid-template-columns:repeat(5,1fr)}}
