@@ -28,3 +28,5 @@ Upload de inhoud van deze map naar een HTTPS-host, bijvoorbeeld GitHub Pages. Op
 - Dit prototype heeft nog geen accounts, cloudsync, automatische herinneringen, recruiter/contactbeheer, koppeling van documenten aan meerdere vacatures of OCR.
 - De Google Fonts-import is optioneel; zonder internet gebruikt de app een fallback-lettertype.
 - De app is een werkende basis, geen afgeronde of beveiligingsgeaudite productie-app. Bewaar back-ups op een veilige plek.
+
+\n## Optionele AI-vacatureanalyse (Gemini)\n\nDe AI-functie gebruikt een aparte Cloudflare Worker als beveiligde tussenlaag. De Gemini API-sleutel wordt uitsluitend als Cloudflare Secret opgeslagen en staat nooit in de browser of repository. Zie `AI-SETUP.md` voor de installatie. De app verstuurt vacaturetekst alleen na een bevestiging per analyse. Google vermeldt dat inhoud op de gratis Gemini API-tier kan worden gebruikt om producten te verbeteren; stuur daarom geen onnodige persoonsgegevens mee. De lokale herkenning blijft beschikbaar zonder AI.\n
