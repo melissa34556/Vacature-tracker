@@ -105,7 +105,8 @@ async function runAiImport(text,dialogId,messageId,button){
  }catch(error){$(messageId).textContent=error.message||"AI-analyse is niet gelukt."}
  finally{button.disabled=false;button.textContent=old;}
 }
-\nfunction startPasteImport(){$("addMethodDialog").close();$("pasteVacancyText").value="";$("pasteParseMessage").textContent="";$("pasteVacancyDialog").showModal();}
+
+function startPasteImport(){$("addMethodDialog").close();$("pasteVacancyText").value="";$("pasteParseMessage").textContent="";$("pasteVacancyDialog").showModal();}
 async function init(){db=await openDB();vacancies=await all("vacancies");documents=await all("documents");contacts=await all("contacts");reminders=await all("reminders");inboxItems=await all("inbox");fillSelect("jobStatus",STATUSES);fillSelect("statusFilter",STATUSES,"Alle statussen");fillSelect("documentType",DOC_TYPES);const settings=await all("settings");if(settings[0])applySettings(settings[0]);render();installExtraUI();render();if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});}
 
 
