@@ -120,6 +120,25 @@ async function fetchPublicPage(raw) {
   throw new Error("De vacaturepagina kon niet worden opgehaald.");
 }
 
+function normalizeLinkedInFields(result) {
+  // LinkedIn's public page title often contains all three fields:
+  // "Role at Company — City, Region | LinkedIn".
+  const title = String(result.title || "").trim();
+  const match = title.match(/^(.+?)\s+at\s+(.+?)\s+[—–-]\s+(.+?)(?:\s*\\|\s*LinkedIn)?$/i);
+  if (!match) return result;
+
+  const clean = value => value.trim().replace(/\s*\\|\s*LinkedIn$/i, "");
+  const role = clean(match[1]);
+  const company = clean(match[2]);
+  const place = clean(match[3]);
+  return {
+    ...result,
+    title: role || result.title,
+    company: result.company || company,
+    location: place || result.location
+  };
+}
+
 function isTemporaryOverload(status) {
   return [429, 500, 502, 503, 504].includes(status);
 }
@@ -272,7 +291,7 @@ ${text}`;
         ?.map(part => part.text || "").join("") || "";
       let result;
       try {
-        result = JSON.parse(output);
+        result = normalizeLinkedInFields(JSON.parse(output));
       } catch {
         return json({ error: "Gemini gaf geen geldige analyse terug." }, 502, cors);
       }
