@@ -30,3 +30,14 @@ Cloudflare Workers Free heeft een limiet van 100.000 verzoeken per dag. Gemini g
 
 ## Privacy
 De vacaturetekst gaat via de Worker naar Google Gemini. De Worker slaat de tekst niet op. De app bewaart de originele tekst lokaal in je browser. Controleer de AI-resultaten zelf; ontbrekende gegevens worden leeg gelaten. Als je geen tekst naar Google wilt sturen, gebruik dan de lokale herkenningsknop.
+
+
+## Android-app met Capacitor
+
+De Android-WebView gebruikt doorgaans de origin `https://localhost`. Als AI ook in de Android-app moet werken, voeg deze origin toe aan de bestaande Cloudflare Worker-variabele `ALLOWED_ORIGIN`, gescheiden door een komma:
+
+```text
+https://melissa34556.github.io,https://localhost
+```
+
+Behoud beide adressen. De API-sleutel blijft uitsluitend als Cloudflare Secret `GEMINI_API_KEY` opgeslagen.
