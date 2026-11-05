@@ -9,6 +9,7 @@ on:
       - "styles.css"
       - "manifest.webmanifest"
       - "icon-*.png"
+      - "assets/**"
       - "package.json"
       - "native-share.js"
       - "capacitor.config.json"
@@ -21,6 +22,7 @@ on:
       - "styles.css"
       - "manifest.webmanifest"
       - "icon-*.png"
+      - "assets/**"
       - "package.json"
       - "native-share.js"
       - "capacitor.config.json"
@@ -61,15 +63,19 @@ jobs:
 
           index = Path("www/index.html")
           html = index.read_text(encoding="utf-8")
-          script = '  <script src="native-share.bundle.js"></script>\n'
+          script = '  <script src="native-share.bundle.js"></script>\\n'
           if "native-share.bundle.js" not in html:
               html = html.replace("</body>", script + "</body>")
               index.write_text(html, encoding="utf-8")
-
           PY
 
       - name: Generate Android project
         run: npx cap add android
+
+      - name: Generate launcher icons from the app artwork
+        run: |
+          npm install --no-save @capacitor/assets
+          npx capacitor-assets generate --android
 
       - name: Register Android share intents
         run: |
