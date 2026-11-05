@@ -178,7 +178,7 @@ async function fetchVacancyFromUrl(raw){
  const response=await fetch(endpoint+"/fetch-vacancy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:parsed.href})});
  let payload={};try{payload=await response.json()}catch{}
  if(!response.ok)throw new Error(payload.error||"De vacaturepagina kon niet worden opgehaald (HTTP "+response.status+").");
- const text=String(payload.text||"").trim();if(text.length<80)throw new Error("De pagina bevat te weinig leesbare vacaturetekst.");
+ const text=String(payload.text||"").replaceAll("\\n","\n").trim();if(text.length<80)throw new Error("De pagina bevat te weinig leesbare vacaturetekst.");
  return {text,url:payload.url||parsed.href};
 }
 $("fetchLinkVacancy")?.addEventListener("click",async()=>{
