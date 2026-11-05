@@ -1,7 +1,7 @@
 const MODEL = "gemini-3.6-flash";
 const FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
 const MAX_TEXT_LENGTH = 60000;
-const WORKER_VERSION = "2026-11-05-ai-fallback";
+const WORKER_VERSION = "2026-11-05-vacancy-fetch";
 
 function getAllowedOrigins(env) {
   return String(env.ALLOWED_ORIGIN || "")
@@ -29,6 +29,95 @@ function json(data, status, cors) {
     status,
     headers: { ...cors, "Cache-Control": "no-store" }
   });
+}
+
+
+const MAX_PAGE_BYTES = 2_000_000;
+const MAX_REDIRECTS = 4;
+
+function validateTarget(raw) {
+  let url;
+  try { url = new URL(raw); } catch { throw new Error("Vul een geldige vacaturelink in."); }
+  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
+    throw new Error("Alleen openbare http- en https-links zijn toegestaan.");
+  }
+  if (url.port && !["80", "443"].includes(url.port)) {
+    throw new Error("Deze link gebruikt een niet-toegestane poort.");
+  }
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (!host || host === "localhost" || host.endsWith(".localhost") ||
+      host.endsWith(".local") || host.endsWith(".internal") ||
+      host.endsWith(". test") || host === "metadata.google.internal" ||
+      /^(\d{1,3}\.){3}\d{1,3}$/.test(host) || host.includes(":")) {
+    throw new Error("Deze link verwijst niet naar een toegestane openbare website.");
+  }
+  return url;
+}
+
+function decodeHtml(value) {
+  return value.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([\da-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)));
+}
+
+function extractPage(source, contentType) {
+  if (contentType.includes("text/plain")) return { title: "", description: "", text: source };
+  const title = source.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "";
+  const h1 = source.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || "";
+  const og = source.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i)?.[1] || "";
+  const description = source.match(/<meta[^>]+(?:name|property)=["'](?:description|og:description)["'][^>]+content=["']([^"']*)["']/i)?.[1] || "";
+  let body = source.replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<(script|style|noscript|svg|nav|footer|header|form|iframe|aside)[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr)[^>]*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ");
+  body = decodeHtml(body).replace(/[ \t\f\v]+/g, " ").replace(/\n\s*/g, "\n")
+    .replace(/\n{3,}/g, "\n\n").trim();
+  return { title: decodeHtml(og || h1 || title.replace(/<[^>]+>/g, " ")).trim(),
+    description: decodeHtml(description), text: body };
+}
+
+async function fetchPublicPage(raw) {
+  let target = validateTarget(raw);
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const response = await fetch(target.href, {
+      method: "GET", redirect: "manual",
+      headers: { "User-Agent": "MijnSollicitatiesVacancyReader/1.0", "Accept": "text/html,text/plain;q=0.9" },
+      signal: AbortSignal.timeout(12000)
+    });
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get("Location");
+      if (!location || hop === MAX_REDIRECTS) throw new Error("De website stuurde te vaak door naar een andere pagina.");
+      target = validateTarget(new URL(location, target).href);
+      continue;
+    }
+    if (!response.ok) throw new Error("De website gaf een foutmelding (HTTP " + response.status + ").");
+    const type = (response.headers.get("Content-Type") || "").toLowerCase();
+    if (!type.includes("text/html") && !type.includes("text/plain")) {
+      throw new Error("Deze link verwijst niet naar een uitleesbare webpagina. Gebruik eventueel de PDF.");
+    }
+    const length = Number(response.headers.get("Content-Length") || 0);
+    if (length > MAX_PAGE_BYTES) throw new Error("De vacaturepagina is te groot om veilig uit te lezen.");
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("De website heeft geen leesbare pagina teruggegeven.");
+    const chunks = []; let total = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > MAX_PAGE_BYTES) { await reader.cancel(); throw new Error("De vacaturepagina is te groot om veilig uit te lezen."); }
+        chunks.push(value);
+      }
+    } finally { reader.releaseLock(); }
+    const bytes = new Uint8Array(total); let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    const source = new TextDecoder("utf-8").decode(bytes);
+    const page = extractPage(source, type);
+    return { ...page, url: target.href };
+  }
+  throw new Error("De vacaturepagina kon niet worden opgehaald.");
 }
 
 function isTemporaryOverload(status) {
@@ -96,6 +185,21 @@ export default {
         configuredOrigins: allowedOrigins,
         geminiApiKeyConfigured: Boolean(env.GEMINI_API_KEY)
       }, 200, cors);
+    }
+
+    if (url.pathname === "/fetch-vacancy" && request.method === "POST") {
+      if (!originAllowed) return json({ error: "Deze app is niet toegestaan." }, 403, cors);
+      try {
+        const body = await request.json();
+        const rawUrl = String(body.url || "").trim();
+        if (!rawUrl || rawUrl.length > 2048) return json({ error: "Vul een geldige vacaturelink in." }, 400, cors);
+        const page = await fetchPublicPage(rawUrl);
+        const text = [page.title, page.description, page.text].filter(Boolean).join("\\n\\n").trim();
+        if (text.length < 80) return json({ error: "De pagina bevat te weinig leesbare vacaturetekst. Mogelijk wordt de inhoud met JavaScript geladen." }, 422, cors);
+        return json({ text: text.slice(0, 60000), url: page.url }, 200, cors);
+      } catch (error) {
+        return json({ error: error.message || "De vacaturepagina kon niet worden opgehaald." }, 422, cors);
+      }
     }
 
     if (url.pathname !== "/analyze" || request.method !== "POST") {
