@@ -1,5 +1,6 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { CapacitorShareTarget } from '@capgo/capacitor-share-target';
+import { Browser } from '@capacitor/browser';
 
 function findUrl(texts) {
   for (const text of texts || []) {
@@ -53,6 +54,15 @@ async function handleShare(event) {
 }
 
 if (Capacitor.isNativePlatform()) {
+  document.addEventListener('click', event => {
+    const anchor = event.target?.closest?.('a[target="_blank"][href]');
+    if (!anchor) return;
+    const href = anchor.href;
+    if (!/^https?:/i.test(href)) return;
+    event.preventDefault();
+    Browser.open({ url: href }).catch(error => console.error('Externe link openen mislukt:', error));
+  }, true);
+
   CapacitorShareTarget.addListener('shareReceived', event => {
     handleShare(event).catch(error => console.error('Verwerken van gedeelde inhoud mislukt:', error));
   });
