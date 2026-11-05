@@ -107,8 +107,7 @@ async function runAiImport(text,dialogId,messageId,button){
 }
 
 function startPasteImport(){$("addMethodDialog").close();$("pasteVacancyText").value="";$("pasteParseMessage").textContent="";$("pasteVacancyDialog").showModal();}
-function hideAppSplash(){const splash=$("app-splash");if(!splash||splash.dataset.hiding)return;splash.dataset.hiding="true";setTimeout(()=>{splash.classList.add("is-hidden");setTimeout(()=>splash.remove(),450)},650)}
-async function init(){db=await openDB();vacancies=await all("vacancies");documents=await all("documents");contacts=await all("contacts");reminders=await all("reminders");inboxItems=await all("inbox");fillSelect("jobStatus",STATUSES);fillSelect("statusFilter",STATUSES,"Alle statussen");fillSelect("documentType",DOC_TYPES);const settings=await all("settings");if(settings[0])applySettings(settings[0]);render();installExtraUI();render();if(!window.Capacitor?.isNativePlatform?.() && "serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});hideAppSplash();}
+async function init(){db=await openDB();vacancies=await all("vacancies");documents=await all("documents");contacts=await all("contacts");reminders=await all("reminders");inboxItems=await all("inbox");fillSelect("jobStatus",STATUSES);fillSelect("statusFilter",STATUSES,"Alle statussen");fillSelect("documentType",DOC_TYPES);const settings=await all("settings");if(settings[0])applySettings(settings[0]);render();installExtraUI();render();if(!window.Capacitor?.isNativePlatform?.() && "serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});}
 
 
 function sourceFromUrl(url){try{return new URL(url).hostname.replace(/^www\./,"")}catch{return ""}}
