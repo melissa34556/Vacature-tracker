@@ -30,3 +30,7 @@ Upload de inhoud van deze map naar een HTTPS-host, bijvoorbeeld GitHub Pages. Op
 - De app is een werkende basis, geen afgeronde of beveiligingsgeaudite productie-app. Bewaar back-ups op een veilige plek.
 
 \n## Optionele AI-vacatureanalyse (Gemini)\n\nDe AI-functie gebruikt een aparte Cloudflare Worker als beveiligde tussenlaag. De Gemini API-sleutel wordt uitsluitend als Cloudflare Secret opgeslagen en staat nooit in de browser of repository. Zie `AI-SETUP.md` voor de installatie. De app verstuurt vacaturetekst alleen na een bevestiging per analyse. Google vermeldt dat inhoud op de gratis Gemini API-tier kan worden gebruikt om producten te verbeteren; stuur daarom geen onnodige persoonsgegevens mee. De lokale herkenning blijft beschikbaar zonder AI.\n
+
+## Android-app bouwen
+
+Deze repository kan met Capacitor als Android-app worden verpakt. GitHub Actions maakt na een push naar `main` of handmatig via Actions een test-APK. De APK wordt als workflow-artifact opgeslagen. De eerste APK is een debug/testbuild, niet bedoeld voor de Play Store. Android gebruikt eigen lokale appopslag; browsergegevens worden niet automatisch overgezet. De bestaande PWA blijft afzonderlijk beschikbaar via GitHub Pages.
