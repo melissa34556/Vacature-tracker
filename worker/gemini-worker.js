@@ -124,10 +124,10 @@ function normalizeLinkedInFields(result) {
   // LinkedIn's public page title often contains all three fields:
   // "Role at Company — City, Region | LinkedIn".
   const title = String(result.title || "").trim();
-  const match = title.match(/^(.+?)\\s+at\\s+(.+?)\\s+[—–-]\\s+(.+?)(?:\\s*\\|\\s*LinkedIn)?$/i);
+  const match = title.match(/^(.+?)\s+at\s+(.+?)\s+[—–-]\s+(.+?)(?:\s*\\|\s*LinkedIn)?$/i);
   if (!match) return result;
 
-  const clean = value => value.trim().replace(/\\s*\\|\\s*LinkedIn$/i, "");
+  const clean = value => value.trim().replace(/\s*\\|\s*LinkedIn$/i, "");
   const role = clean(match[1]);
   const company = clean(match[2]);
   const place = clean(match[3]);
