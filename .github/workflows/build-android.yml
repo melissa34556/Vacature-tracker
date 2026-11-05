@@ -67,6 +67,14 @@ jobs:
               html = html.replace("</body>", script + "</body>")
               index.write_text(html, encoding="utf-8")
 
+          PY
+
+      - name: Generate Android project
+        run: npx cap add android
+
+      - name: Register Android share intents
+        run: |
+          python3 - <<'PY'
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           if not manifest.exists():
               raise RuntimeError("AndroidManifest.xml niet gevonden")
@@ -87,9 +95,6 @@ jobs:
           ET.register_namespace("android", android)
           tree.write(manifest, encoding="utf-8", xml_declaration=True)
           PY
-
-      - name: Generate Android project
-        run: npx cap add android
 
       - name: Sync Capacitor
         run: npx cap sync android
