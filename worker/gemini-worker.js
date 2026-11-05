@@ -1,6 +1,7 @@
 const MODEL = "gemini-3.6-flash";
+const FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
 const MAX_TEXT_LENGTH = 60000;
-const WORKER_VERSION = "2026-11-05-ai-diagnostics";
+const WORKER_VERSION = "2026-11-05-ai-fallback";
 
 function getAllowedOrigins(env) {
   return String(env.ALLOWED_ORIGIN || "")
@@ -30,6 +31,46 @@ function json(data, status, cors) {
   });
 }
 
+function isTemporaryOverload(status) {
+  return [429, 500, 502, 503, 504].includes(status);
+}
+
+async function callGemini(model, apiKey, prompt) {
+  return fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/" +
+      model + ":generateContent?key=" + encodeURIComponent(apiKey),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              title: { type: "STRING" },
+              company: { type: "STRING" },
+              location: { type: "STRING" },
+              hours: { type: "STRING" },
+              salaryMin: { type: "STRING" },
+              salaryMax: { type: "STRING" },
+              summary: { type: "STRING" },
+              tasks: { type: "STRING" },
+              requirements: { type: "STRING" },
+              offer: { type: "STRING" }
+            },
+            required: [
+              "title", "company", "location", "hours", "salaryMin",
+              "salaryMax", "summary", "tasks", "requirements", "offer"
+            ]
+          }
+        }
+      })
+    }
+  );
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -44,12 +85,12 @@ export default {
 
     const url = new URL(request.url);
 
-    // Public diagnostic endpoint. It never returns the API key, only whether one is configured.
     if (url.pathname === "/health" && request.method === "GET") {
       return json({
         status: "ok",
         workerVersion: WORKER_VERSION,
         model: MODEL,
+        fallbackModels: FALLBACK_MODELS,
         requestOrigin: origin || "(geen Origin-header; waarschijnlijk rechtstreeks geopend)",
         originAllowed,
         configuredOrigins: allowedOrigins,
@@ -91,44 +132,36 @@ export default {
 VACATURETEKST:
 ${text}`;
 
-      const response = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/" +
-          MODEL + ":generateContent?key=" + encodeURIComponent(env.GEMINI_API_KEY),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: "OBJECT",
-                properties: {
-                  title: { type: "STRING" },
-                  company: { type: "STRING" },
-                  location: { type: "STRING" },
-                  hours: { type: "STRING" },
-                  salaryMin: { type: "STRING" },
-                  salaryMax: { type: "STRING" },
-                  summary: { type: "STRING" },
-                  tasks: { type: "STRING" },
-                  requirements: { type: "STRING" },
-                  offer: { type: "STRING" }
-                },
-                required: [
-                  "title", "company", "location", "hours", "salaryMin",
-                  "salaryMax", "summary", "tasks", "requirements", "offer"
-                ]
-              }
-            }
-          })
+      let response = await callGemini(MODEL, env.GEMINI_API_KEY, prompt);
+      let usedModel = MODEL;
+
+      // Give the primary model one brief retry, then try supported alternatives
+      // only for temporary capacity/rate-limit/server errors.
+      if (!response.ok && isTemporaryOverload(response.status)) {
+        await new Promise(resolve => setTimeout(resolve, 900));
+        response = await callGemini(MODEL, env.GEMINI_API_KEY, prompt);
+      }
+
+      if (!response.ok && isTemporaryOverload(response.status)) {
+        for (const fallbackModel of FALLBACK_MODELS) {
+          const fallbackResponse = await callGemini(
+            fallbackModel, env.GEMINI_API_KEY, prompt
+          );
+          response = fallbackResponse;
+          usedModel = fallbackModel;
+          if (response.ok || !isTemporaryOverload(response.status)) break;
         }
-      );
+      }
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const message = data.error?.message || "Gemini kon de tekst niet analyseren.";
-        return json({ error: message, upstreamStatus: response.status }, 502, cors);
+        const message = data.error?.message ||
+          "Google Gemini is tijdelijk niet beschikbaar. Probeer het later opnieuw.";
+        return json({
+          error: message,
+          upstreamStatus: response.status,
+          attemptedModels: [MODEL, ...FALLBACK_MODELS]
+        }, 502, cors);
       }
 
       const output = data.candidates?.[0]?.content?.parts
@@ -140,10 +173,12 @@ ${text}`;
         return json({ error: "Gemini gaf geen geldige analyse terug." }, 502, cors);
       }
 
-      return json(result, 200, cors);
+      return json({ ...result, modelUsed: usedModel }, 200, cors);
     } catch (error) {
       console.error("AI-aanvraag mislukt:", error);
-      return json({ error: "De AI-aanvraag is mislukt. Controleer de Worker-logs in Cloudflare." }, 500, cors);
+      return json({
+        error: "De AI-aanvraag is mislukt. Controleer de Worker-logs in Cloudflare."
+      }, 500, cors);
     }
   }
 };
