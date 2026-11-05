@@ -56,7 +56,7 @@ jobs:
       - name: Prepare web assets
         run: |
           mkdir -p www
-          cp index.html app.js styles.css manifest.webmanifest icon-192.png icon-512.png www/
+          cp index.html app.js styles.css manifest.webmanifest icon-192.png www/
           npx esbuild native-share.js --bundle --format=iife --outfile=www/native-share.bundle.js
           python3 - <<'PY'
           from pathlib import Path
