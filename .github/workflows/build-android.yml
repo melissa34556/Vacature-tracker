@@ -58,7 +58,6 @@ jobs:
           npx esbuild native-share.js --bundle --format=iife --outfile=www/native-share.bundle.js
           python3 - <<'PY'
           from pathlib import Path
-          import xml.etree.ElementTree as ET
 
           index = Path("www/index.html")
           html = index.read_text(encoding="utf-8")
@@ -75,6 +74,9 @@ jobs:
       - name: Register Android share intents
         run: |
           python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           if not manifest.exists():
               raise RuntimeError("AndroidManifest.xml niet gevonden")
