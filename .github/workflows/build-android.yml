@@ -10,6 +10,7 @@ on:
       - "manifest.webmanifest"
       - "icon-*.png"
       - "package.json"
+      - "native-share.js"
       - "capacitor.config.json"
       - ".github/workflows/build-android.yml"
   push:
@@ -21,6 +22,7 @@ on:
       - "manifest.webmanifest"
       - "icon-*.png"
       - "package.json"
+      - "native-share.js"
       - "capacitor.config.json"
       - ".github/workflows/build-android.yml"
 
@@ -53,6 +55,38 @@ jobs:
         run: |
           mkdir -p www
           cp index.html app.js styles.css manifest.webmanifest icon-192.png icon-512.png www/
+          npx esbuild native-share.js --bundle --format=iife --outfile=www/native-share.bundle.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          index = Path("www/index.html")
+          html = index.read_text(encoding="utf-8")
+          script = '  <script src="native-share.bundle.js"></script>\n'
+          if "native-share.bundle.js" not in html:
+              html = html.replace("</body>", script + "</body>")
+              index.write_text(html, encoding="utf-8")
+
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          if not manifest.exists():
+              raise RuntimeError("AndroidManifest.xml niet gevonden")
+          tree = ET.parse(manifest)
+          root = tree.getroot()
+          android = "http://schemas.android.com/apk/res/android"
+          application = root.find("application")
+          activity = next((node for node in application.findall("activity") if node.get("{" + android + "}name", "").endswith("MainActivity")), None)
+          if activity is None:
+              raise RuntimeError("MainActivity niet gevonden in AndroidManifest.xml")
+          existing = {item.get("{" + android + "}name") for filt in activity.findall("intent-filter") for item in filt.findall("action")}
+          for action_name in ("android.intent.action.SEND", "android.intent.action.SEND_MULTIPLE"):
+              if action_name not in existing:
+                  filt = ET.SubElement(activity, "intent-filter")
+                  ET.SubElement(filt, "action", {"{" + android + "}name": action_name})
+                  ET.SubElement(filt, "category", {"{" + android + "}name": "android.intent.category.DEFAULT"})
+                  ET.SubElement(filt, "data", {"{" + android + "}mimeType": "*/*"})
+          ET.register_namespace("android", android)
+          tree.write(manifest, encoding="utf-8", xml_declaration=True)
+          PY
 
       - name: Generate Android project
         run: npx cap add android
