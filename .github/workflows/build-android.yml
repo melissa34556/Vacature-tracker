@@ -72,6 +72,15 @@ jobs:
       - name: Generate Android project
         run: npx cap add android
 
+      - name: Prepare the app icon source
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          from PIL import Image
+          image = Image.open("assets/icon.png").convert("RGB")
+          image.resize((1024, 1024), Image.Resampling.LANCZOS).save("assets/icon.png", format="PNG", optimize=True)
+          PY
+
       - name: Generate launcher icons from the app artwork
         run: |
           npm install --no-save @capacitor/assets
