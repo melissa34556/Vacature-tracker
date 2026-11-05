@@ -172,24 +172,20 @@ $("choosePasteVacancy").addEventListener("click",startPasteImport);
 $("chooseLinkVacancy")?.addEventListener("click",()=>{$("addMethodDialog").close();$("vacancyUrlInput").value="";$("linkImportMessage").textContent="";$("linkVacancyDialog").showModal()});
 ["cancelLinkVacancy","cancelLinkVacancyBottom"].forEach(id=>$(id)?.addEventListener("click",()=>$("linkVacancyDialog").close()));
 async function fetchVacancyFromUrl(raw){
- const parsed=new URL(raw);if(!["http:","https:"].includes(parsed.protocol))throw new Error("Gebruik een geldige http- of https-link.");
- const response=await fetch(parsed.href,{method:"GET",credentials:"omit"});
- if(!response.ok)throw new Error("De website gaf een foutmelding (HTTP "+response.status+").");
- const type=response.headers.get("content-type")||"";if(!type.includes("text/html")&&!type.includes("text/plain"))throw new Error("Deze link verwijst niet naar een uitleesbare webpagina.");
- const source=await response.text(),doc=new DOMParser().parseFromString(source,"text/html");
- doc.querySelectorAll("script,style,noscript,svg,nav,footer,header,form,iframe").forEach(n=>n.remove());
- const pageTitle=doc.querySelector('meta[property="og:title"]')?.content||doc.querySelector("h1")?.textContent||doc.title||"";
- const description=doc.querySelector('meta[property="og:description"]')?.content||doc.querySelector('meta[name="description"]')?.content||"";
- const body=(doc.querySelector("main")||doc.querySelector("article")||doc.body)?.innerText||"";
- const text=[pageTitle,description,body].filter(Boolean).join("\n\n").replace(/\n{3,}/g,"\n\n");
- if(text.trim().length<80)throw new Error("De pagina bevat te weinig leesbare vacaturetekst.");
- return {text,url:parsed.href};
+ const endpoint=getAiEndpoint();if(!endpoint)throw new Error("Stel eerst de AI-koppeling in bij Instellingen.");
+ let parsed;try{parsed=new URL(raw)}catch{throw new Error("Vul een geldige vacaturelink in.")}
+ if(!["http:","https:"].includes(parsed.protocol))throw new Error("Gebruik een geldige http- of https-link.");
+ const response=await fetch(endpoint+"/fetch-vacancy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:parsed.href})});
+ let payload={};try{payload=await response.json()}catch{}
+ if(!response.ok)throw new Error(payload.error||"De vacaturepagina kon niet worden opgehaald (HTTP "+response.status+").");
+ const text=String(payload.text||"").replaceAll("\\n","\n").trim();if(text.length<80)throw new Error("De pagina bevat te weinig leesbare vacaturetekst.");
+ return {text,url:payload.url||parsed.href};
 }
 $("fetchLinkVacancy")?.addEventListener("click",async()=>{
  const raw=$("vacancyUrlInput").value.trim();if(!raw){$("linkImportMessage").textContent="Vul eerst een vacaturelink in.";return;}
  const button=$("fetchLinkVacancy");button.disabled=true;button.textContent="Pagina ophalen…";$("linkImportMessage").textContent="";
  try{const result=await fetchVacancyFromUrl(raw);$("linkVacancyDialog").close();openVacancyFromText(result.text);$("jobUrl").value=result.url; if(!$("company").value){const host=new URL(result.url).hostname.replace(/^www\./,"").split(".")[0];if(host==="werkenbijkwantum")$("company").value="Kwantum";}}
- catch(err){$("linkImportMessage").textContent=err.message.includes("Failed to fetch")||err instanceof TypeError?"Deze website blokkeert automatisch uitlezen vanuit de app (CORS). Plak de vacaturetekst of upload de PDF; de link kun je daarna ook bewaren.":err.message}
+ catch(err){$("linkImportMessage").textContent=err.message||"Automatisch uitlezen is niet gelukt. Plak de vacaturetekst of upload de PDF; de link kun je daarna ook bewaren."}
  finally{button.disabled=false;button.textContent="Vacature ophalen";}
 });
 
