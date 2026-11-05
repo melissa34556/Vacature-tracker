@@ -135,6 +135,6 @@ button:disabled{opacity:.6;cursor:wait}
 /* Animated startup screen: rotating accent stroke */
 .app-splash{position:fixed;z-index:3000;inset:0;display:grid;place-items:center;background:var(--bg,#f7f5fa);color:var(--accent,#7765a8);opacity:1;visibility:visible;transition:opacity .42s ease,visibility .42s ease}
 .app-splash.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
-.splash-loader{display:block;width:48px;height:48px;animation:splash-spin 1.8s linear infinite}
+.splash-loader{display:block!important;width:48px!important;height:48px!important;min-width:48px;min-height:48px;max-width:48px;max-height:48px;flex:none;animation:splash-spin 1.8s linear infinite}
 @keyframes splash-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.splash-loader{animation:none}.app-splash{transition:none}}
