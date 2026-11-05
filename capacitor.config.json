@@ -1,0 +1,11 @@
+{
+  "appId": "nl.melissa34556.mijnsollicitaties",
+  "appName": "Mijn sollicitaties",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

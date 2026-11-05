@@ -1,17 +1,17 @@
 const MODEL = "gemini-3.6-flash";
 const MAX_TEXT_LENGTH = 60000;
-function corsHeaders(origin, allowedOrigin) {
- const allowed = allowedOrigin === "*" ? "*" : (origin === allowedOrigin ? origin : "null");
+function corsHeaders(origin, allowedOrigins) {
+ const allowed = allowedOrigins.includes("*") ? "*" : (allowedOrigins.includes(origin) ? origin : "null");
  return {"Access-Control-Allow-Origin":allowed,"Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type","Vary":"Origin"};
 }
 export default {
  async fetch(request, env) {
-  const origin=request.headers.get("Origin")||"",cors=corsHeaders(origin,env.ALLOWED_ORIGIN||"");
+  const origin=request.headers.get("Origin")||"",allowedOrigins=String(env.ALLOWED_ORIGIN||"").split(",").map(value=>value.trim()).filter(Boolean),cors=corsHeaders(origin,allowedOrigins);
   if(request.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
   const url=new URL(request.url);
   if(url.pathname!=="/analyze"||request.method!=="POST")return Response.json({error:"Niet gevonden."},{status:404,headers:cors});
   if(!env.GEMINI_API_KEY)return Response.json({error:"De Gemini API-sleutel is nog niet ingesteld."},{status:503,headers:cors});
-  if(!env.ALLOWED_ORIGIN||origin!==env.ALLOWED_ORIGIN)return Response.json({error:"Deze app is niet toegestaan."},{status:403,headers:cors});
+  if(!allowedOrigins.length||(!allowedOrigins.includes("*")&&!allowedOrigins.includes(origin)))return Response.json({error:"Deze app is niet toegestaan."},{status:403,headers:cors});
   try {
    const body=await request.json(),text=String(body.text||"").trim();
    if(text.length<80)return Response.json({error:"Te weinig vacaturetekst."},{status:400,headers:cors});

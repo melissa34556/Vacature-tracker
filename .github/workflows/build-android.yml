@@ -1,0 +1,114 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "app.js"
+      - "index.html"
+      - "styles.css"
+      - "manifest.webmanifest"
+      - "icon-*.png"
+      - "package.json"
+      - "native-share.js"
+      - "capacitor.config.json"
+      - ".github/workflows/build-android.yml"
+  push:
+    branches: [main]
+    paths:
+      - "app.js"
+      - "index.html"
+      - "styles.css"
+      - "manifest.webmanifest"
+      - "icon-*.png"
+      - "package.json"
+      - "native-share.js"
+      - "capacitor.config.json"
+      - ".github/workflows/build-android.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Capacitor
+        run: npm install
+
+      - name: Prepare web assets
+        run: |
+          mkdir -p www
+          cp index.html app.js styles.css manifest.webmanifest icon-192.png icon-512.png www/
+          npx esbuild native-share.js --bundle --format=iife --outfile=www/native-share.bundle.js
+          python3 - <<'PY'
+          from pathlib import Path
+
+          index = Path("www/index.html")
+          html = index.read_text(encoding="utf-8")
+          script = '  <script src="native-share.bundle.js"></script>\n'
+          if "native-share.bundle.js" not in html:
+              html = html.replace("</body>", script + "</body>")
+              index.write_text(html, encoding="utf-8")
+
+          PY
+
+      - name: Generate Android project
+        run: npx cap add android
+
+      - name: Register Android share intents
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          if not manifest.exists():
+              raise RuntimeError("AndroidManifest.xml niet gevonden")
+          tree = ET.parse(manifest)
+          root = tree.getroot()
+          android = "http://schemas.android.com/apk/res/android"
+          application = root.find("application")
+          activity = next((node for node in application.findall("activity") if node.get("{" + android + "}name", "").endswith("MainActivity")), None)
+          if activity is None:
+              raise RuntimeError("MainActivity niet gevonden in AndroidManifest.xml")
+          existing = {item.get("{" + android + "}name") for filt in activity.findall("intent-filter") for item in filt.findall("action")}
+          for action_name in ("android.intent.action.SEND", "android.intent.action.SEND_MULTIPLE"):
+              if action_name not in existing:
+                  filt = ET.SubElement(activity, "intent-filter")
+                  ET.SubElement(filt, "action", {"{" + android + "}name": action_name})
+                  ET.SubElement(filt, "category", {"{" + android + "}name": "android.intent.category.DEFAULT"})
+                  ET.SubElement(filt, "data", {"{" + android + "}mimeType": "*/*"})
+          ET.register_namespace("android", android)
+          tree.write(manifest, encoding="utf-8", xml_declaration=True)
+          PY
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mijn-sollicitaties-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
