@@ -79,11 +79,24 @@ function extractPage(source, contentType) {
 }
 
 async function fetchPublicPage(raw) {
-  let target = validateTarget(raw);
+  const originalTarget = validateTarget(raw);
+  let target = originalTarget;
+
+  // LinkedIn's regular job page can rate-limit server-side requests.
+  // Its public, logged-out guest endpoint serves the job description fragment.
+  const linkedinJob = originalTarget.hostname.toLowerCase().endsWith("linkedin.com")
+    ? originalTarget.pathname.match(/\\/jobs\\/view\\/(\\d+)/i)
+    : null;
+  if (linkedinJob) {
+    target = validateTarget(
+      "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/" + linkedinJob[1]
+    );
+  }
+
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const response = await fetch(target.href, {
       method: "GET", redirect: "manual",
-      headers: { "User-Agent": "MijnSollicitatiesVacancyReader/1.0", "Accept": "text/html,text/plain;q=0.9" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; MijnSollicitatiesVacancyReader/1.0)", "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9", "Accept-Language": "nl-NL,nl;q=0.9,en;q=0.8" },
       signal: AbortSignal.timeout(12000)
     });
     if ([301, 302, 303, 307, 308].includes(response.status)) {
@@ -115,7 +128,7 @@ async function fetchPublicPage(raw) {
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
     const source = new TextDecoder("utf-8").decode(bytes);
     const page = extractPage(source, type);
-    return { ...page, url: target.href };
+    return { ...page, url: originalTarget.href };
   }
   throw new Error("De vacaturepagina kon niet worden opgehaald.");
 }
