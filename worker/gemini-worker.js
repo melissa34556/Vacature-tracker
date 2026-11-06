@@ -263,7 +263,17 @@ export default {
         return json({ error: "De tekst is te lang." }, 413, cors);
       }
 
-      const prompt = `Analyseer de onderstaande vacaturetekst in het Nederlands. Vul alleen informatie in die expliciet of duidelijk uit de tekst blijkt. Verzin nooit gegevens. Gebruik lege strings als iets ontbreekt. Maak een korte, feitelijke samenvatting en vat werkzaamheden, gevraagd profiel en aanbod afzonderlijk samen. Geef uitsluitend JSON terug met de velden title, company, location, hours, salaryMin, salaryMax, summary, tasks, requirements, offer.
+      const prompt = `Je bent een nauwkeurige vacature-extractor. Analyseer de vacaturetekst in het Nederlands en vul de velden uitsluitend met informatie die letterlijk of ondubbelzinnig in de vacature staat. Raad of verzin nooit gegevens. Als een gegeven niet betrouwbaar te bepalen is, geef dan een lege string.
+
+VELDINSTRUCTIES:
+- title: alleen de functienaam, niet de bedrijfsnaam, slogan of een zin uit de vacature.
+- company: de naam van de werkgever die de vacature aanbiedt. Gebruik geen klant, opdrachtgever, leverancier of doelgroep als werkgever.
+- location: alleen een concrete plaats, regio of expliciet genoemde standplaats. Vul geen taakomschrijving of werkvorm in. Woorden/frasen zoals "aan de klantzijde", "bij klanten", "op locatie", "hybride", "remote" of "in overleg" zijn op zichzelf geen plaatsnaam en moeten leeg blijven.
+- hours: alleen het expliciete aantal uren per week of een expliciete urenomvang (bijv. "32-40 uur"). Neem nooit een standaard van 36 of 40 uur aan.
+- salaryMin en salaryMax: alleen expliciet genoemde salarisbedragen of salarisrange. Laat leeg als het salaris ontbreekt.
+- summary, tasks, requirements en offer: korte, feitelijke samenvattingen van de bijbehorende onderdelen; maak geen aannames.
+
+Geef uitsluitend JSON terug met de velden title, company, location, hours, salaryMin, salaryMax, summary, tasks, requirements, offer.
 
 VACATURETEKST:
 ${text}`;

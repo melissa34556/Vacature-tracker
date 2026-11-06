@@ -183,9 +183,23 @@ async function fetchVacancyFromUrl(raw){
 }
 $("fetchLinkVacancy")?.addEventListener("click",async()=>{
  const raw=$("vacancyUrlInput").value.trim();if(!raw){$("linkImportMessage").textContent="Vul eerst een vacaturelink in.";return;}
- const button=$("fetchLinkVacancy");button.disabled=true;button.textContent="Pagina ophalen…";$("linkImportMessage").textContent="";
- try{const result=await fetchVacancyFromUrl(raw);$("linkVacancyDialog").close();openVacancyFromText(result.text);$("jobUrl").value=result.url; if(!$("company").value){const host=new URL(result.url).hostname.replace(/^www\./,"").split(".")[0];if(host==="werkenbijkwantum")$("company").value="Kwantum";}}
- catch(err){$("linkImportMessage").textContent=err.message||"Automatisch uitlezen is niet gelukt. Plak de vacaturetekst of upload de PDF; de link kun je daarna ook bewaren."}
+ const button=$("fetchLinkVacancy");button.disabled=true;button.textContent="Vacature ophalen…";$("linkImportMessage").textContent="";
+ try{
+  const result=await fetchVacancyFromUrl(raw);
+  button.textContent="AI analyseert vacature…";
+  let aiResult=null,aiWarning="";
+  try{aiResult=await analyzeVacancyWithAI(result.text,$("linkImportMessage"));}
+  catch(error){aiWarning=error.message||"AI-analyse is niet gelukt.";}
+  $("linkVacancyDialog").close();
+  openVacancyFromText(result.text);
+  $("jobUrl").value=result.url;updateJobUrlLink(result.url);
+  if(!$("company").value){
+   const host=new URL(result.url).hostname.replace(/^www\./,"").split(".")[0];
+   if(host==="werkenbijkwantum")$("company").value="Kwantum";
+  }
+  if(aiResult)applyAiVacancyResult(aiResult,result.text);
+  else if(aiWarning)alert("De vacature is wel opgehaald, maar de AI kon de gegevens niet volledig aanvullen.\n\n"+aiWarning+"\n\nControleer de velden handmatig.");
+ }catch(err){$("linkImportMessage").textContent=err.message||"Automatisch uitlezen is niet gelukt. Plak de vacaturetekst of upload de PDF; de link kun je daarna ook bewaren."}
  finally{button.disabled=false;button.textContent="Vacature ophalen";}
 });
 
