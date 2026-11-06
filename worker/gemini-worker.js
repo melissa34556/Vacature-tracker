@@ -85,7 +85,7 @@ async function fetchPublicPage(raw) {
   // LinkedIn's regular job page can rate-limit server-side requests.
   // Its public, logged-out guest endpoint serves the job description fragment.
   const linkedinJob = originalTarget.hostname.toLowerCase().endsWith("linkedin.com")
-    ? originalTarget.pathname.match(/\\/jobs\\/view\\/(\\d+)/i)
+    ? originalTarget.pathname.match(/\/jobs\/view\/(\d+)/i)
     : null;
   if (linkedinJob) {
     target = validateTarget(
